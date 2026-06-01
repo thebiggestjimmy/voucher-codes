@@ -102,3 +102,37 @@ cd ../backend/VoucherCodes.Api && dotnet publish -c Release
 ```
 
 Serve the built `frontend/dist/` from any static host (or wire it into the API's `wwwroot` if you want a single deployable).
+
+## Docker / VPS deployment
+
+The whole stack is containerised in `docker-compose.yml`:
+
+| Container        | Role                                                            |
+| ---------------- | --------------------------------------------------------------- |
+| `sirsavings-api` | ASP.NET Core API, listens on `:8080`, SQLite on a named volume. |
+| `sirsavings-web` | nginx serving the built SPA **and** proxying `/api` → the API.  |
+
+The site is **single-origin**: the browser only ever talks to `sirsavings-web`,
+which forwards `/api/*` to `sirsavings-api` over the private `internal` network.
+Only `sirsavings-web` is attached to the shared external **`web`** network, so
+[Caddy](https://caddyserver.com/) reaches it by container name.
+
+```bash
+# On the VPS (the "web" network is created by your Caddy stack;
+# run `docker network create web` first if it doesn't exist yet):
+docker compose up -d --build
+```
+
+Then add the site block from [`deploy/Caddyfile.example`](deploy/Caddyfile.example)
+to your Caddyfile:
+
+```caddy
+sirsavings.com, www.sirsavings.com, sirsavings.co.uk, www.sirsavings.co.uk {
+	encode zstd gzip
+	reverse_proxy sirsavings-web:80
+}
+```
+
+Both domains point at the same container — the SPA selects UK vs international
+copy from the request hostname. The SQLite database persists in the
+`vouchers-data` volume across redeploys.

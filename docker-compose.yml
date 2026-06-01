@@ -1,0 +1,64 @@
+# SirSavings — full stack (API + SPA) for the VPS.
+#
+# The "frontend" container serves the built SPA and reverse-proxies /api to the
+# "backend" container, so the whole site is single-origin. Only the frontend is
+# attached to the shared external "web" network, so Caddy reaches it by name:
+#
+#     sirsavings.com, sirsavings.co.uk {
+#         reverse_proxy sirsavings-web:80
+#     }
+#
+# Both domains hit the same container; the SPA picks UK vs international copy
+# from the request hostname at runtime.
+#
+# First run on the VPS (the "web" network is created by your Caddy stack):
+#     docker compose up -d --build
+# If "web" does not exist yet:  docker network create web
+name: sirsavings
+
+services:
+  backend:
+    build:
+      context: ./backend/VoucherCodes.Api
+      dockerfile: Dockerfile
+    image: sirsavings-api
+    container_name: sirsavings-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Default: "Data Source=/data/vouchers.db"
+    volumes:
+      - vouchers-data:/data
+    networks:
+      - internal
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: sirsavings-web
+    container_name: sirsavings-web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - internal
+      - web
+    # No host ports published: Caddy on the shared "web" network is the only
+    # ingress. Uncomment to hit the site directly during local testing.
+    # ports:
+    #   - "8088:80"
+
+networks:
+  # Private network for frontend ⇄ backend traffic.
+  internal:
+    driver: bridge
+  # Shared, externally-created network Caddy lives on. Created by your Caddy
+  # stack — we only attach to it, we don't manage it.
+  web:
+    external: true
+    name: web
+
+volumes:
+  vouchers-data:

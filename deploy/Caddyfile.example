@@ -1,0 +1,11 @@
+# Add this site block to your existing Caddyfile (the one running on the shared
+# "web" network). Caddy resolves "sirsavings-web" via Docker DNS because both it
+# and the frontend container are attached to the "web" network.
+#
+# Caddy handles TLS for both domains automatically. The same container serves
+# both — the SPA selects UK vs international copy from the request hostname.
+
+sirsavings.com, www.sirsavings.com, sirsavings.co.uk, www.sirsavings.co.uk {
+	encode zstd gzip
+	reverse_proxy sirsavings-web:80
+}
