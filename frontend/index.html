@@ -1,13 +1,116 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-US">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>VoucherVault</title>
+
+    <!-- Primary meta (defaults to the .com / international variant; the SPA
+         rewrites these for the .co.uk visitor at runtime). -->
+    <title>SirSavings — Free Promo Codes & Coupon Codes, Verified Daily</title>
+    <meta
+      name="description"
+      content="Find thousands of verified promo codes and coupon codes for your favorite stores. Save on fashion, tech, food, travel and more — free to use, community-checked and updated daily."
+    />
+    <meta
+      name="keywords"
+      content="promo codes, coupon codes, discount codes, voucher codes, free promo codes, coupons, deals, savings"
+    />
+    <meta name="author" content="SirSavings" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#312e81" />
+
+    <!-- Canonical + regional alternates (hreflang). The .com is x-default. -->
+    <link rel="canonical" href="https://sirsavings.com/" />
+    <link rel="alternate" hreflang="en-gb" href="https://sirsavings.co.uk/" />
+    <link rel="alternate" hreflang="en-us" href="https://sirsavings.com/" />
+    <link rel="alternate" hreflang="x-default" href="https://sirsavings.com/" />
+
+    <!-- Icons + manifest -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SirSavings" />
+    <meta property="og:title" content="SirSavings — Free Promo Codes & Coupon Codes, Verified Daily" />
+    <meta
+      property="og:description"
+      content="Thousands of community-verified promo and coupon codes, ranked by what actually works. Search, copy and save in seconds — free, no sign-up."
+    />
+    <meta property="og:url" content="https://sirsavings.com/" />
+    <meta property="og:image" content="https://sirsavings.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="en_GB" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@sirsavings" />
+    <meta name="twitter:title" content="SirSavings — Free Promo Codes & Coupon Codes" />
+    <meta
+      name="twitter:description"
+      content="Thousands of community-verified promo and coupon codes, ranked by what actually works. Free, no sign-up."
+    />
+    <meta name="twitter:image" content="https://sirsavings.com/og-image.png" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Structured data: brand + searchable site (Sitelinks Searchbox) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "SirSavings",
+        "url": "https://sirsavings.com/",
+        "description": "Free, community-verified promo codes, coupon codes and discount codes for your favorite stores.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://sirsavings.com/?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "SirSavings",
+        "url": "https://sirsavings.com/",
+        "logo": "https://sirsavings.com/favicon.svg",
+        "slogan": "Smart savings, sorted.",
+        "sameAs": ["https://twitter.com/sirsavings"]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- Crawlable fallback so the page is never "empty" to a bot or a no-JS
+         visitor. Hidden the instant the SPA mounts. -->
+    <noscript>
+      <main style="max-width: 760px; margin: 48px auto; padding: 0 20px; font-family: system-ui, sans-serif;">
+        <h1>SirSavings — Free Promo &amp; Voucher Codes, Verified Daily</h1>
+        <p>
+          SirSavings is a free, community-verified directory of promo codes, coupon codes
+          and discount codes for top stores across fashion, technology, food &amp; drink,
+          travel and home &amp; garden. Every code is ranked by community votes so the ones
+          that actually work rise to the top — no sign-up required.
+        </p>
+        <p>Please enable JavaScript to browse and copy live codes.</p>
+      </main>
+    </noscript>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,0 +1,17 @@
+{
+  "name": "SirSavings — Free Promo & Voucher Codes",
+  "short_name": "SirSavings",
+  "description": "Free, community-verified promo, coupon and voucher codes for top stores. Search, copy and save in seconds.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#312e81",
+  "theme_color": "#312e81",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

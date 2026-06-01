@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="50%" stop-color="#312e81"/>
+      <stop offset="100%" stop-color="#4338ca"/>
+    </linearGradient>
+    <linearGradient id="markbg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5b54f2"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="crown" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fcd34d"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#fcd34d"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1050" cy="-40" r="280" fill="#7c3aed" opacity="0.22"/>
+  <circle cx="120" cy="640" r="220" fill="#6d28d9" opacity="0.18"/>
+
+  <!-- Brand lockup -->
+  <g transform="translate(90 86)">
+    <rect width="64" height="64" rx="17" fill="url(#markbg)"/>
+    <g transform="scale(1.333)">
+      <g fill="url(#crown)">
+        <path d="M11 32 L11 19 L18.5 25 L24 14 L29.5 25 L37 19 L37 32 Z"/>
+        <rect x="11" y="32.5" width="26" height="4.5" rx="2.25"/>
+      </g>
+      <g fill="#fffbeb">
+        <circle cx="11" cy="18.5" r="2.2"/>
+        <circle cx="24" cy="13.5" r="2.4"/>
+        <circle cx="37" cy="18.5" r="2.2"/>
+      </g>
+    </g>
+    <text x="84" y="44" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="800" fill="#ffffff">Sir<tspan fill="#c4b5fd">Savings</tspan></text>
+  </g>
+
+  <!-- Headline -->
+  <text x="90" y="290" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="800" fill="#ffffff" letter-spacing="-2">Free voucher &amp;</text>
+  <text x="90" y="372" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="800" letter-spacing="-2" fill="url(#gold)">promo codes</text>
+
+  <text x="92" y="438" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="500" fill="#cdc9ee">Verified daily · Community-ranked · Free forever</text>
+
+  <!-- Decorative voucher chips -->
+  <g transform="translate(92 488)">
+    <rect width="240" height="70" rx="14" fill="#ffffff"/>
+    <rect x="18" y="16" width="74" height="22" rx="11" fill="#10b981"/>
+    <text x="55" y="32" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">TRAVEL</text>
+    <text x="18" y="58" font-family="ui-monospace, monospace" font-size="20" font-weight="700" fill="#1b2235">STAY15</text>
+    <text x="150" y="44" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#4f46e5">Copy ▸</text>
+  </g>
+  <g transform="translate(352 488)">
+    <rect width="290" height="70" rx="14" fill="#ffffff"/>
+    <rect x="18" y="16" width="120" height="22" rx="11" fill="#f97316"/>
+    <text x="78" y="32" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">FOOD &amp; DRINK</text>
+    <text x="18" y="58" font-family="ui-monospace, monospace" font-size="20" font-weight="700" fill="#1b2235">TWOFORONE</text>
+    <text x="210" y="44" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#4f46e5">Copy ▸</text>
+  </g>
+</svg>

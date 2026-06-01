@@ -1,10 +1,47 @@
-# VoucherVault
+# SirSavings
 
-A small web app for looking up and sharing voucher codes for websites, organised by category.
+> Smart savings, sorted.
+
+A polished web app for finding and sharing **voucher / promo codes**, organised by
+category and ranked by community votes.
 
 - **Frontend**: React + TypeScript (Vite)
 - **Backend**: ASP.NET Core 8 Web API (C#)
 - **Database**: SQLite via Entity Framework Core (file auto-created on first run)
+
+## Branding & regions
+
+The site is built to run on **two domains from a single build**:
+
+| Domain               | Region        | Locale | Currency | Terminology   |
+| -------------------- | ------------- | ------ | -------- | ------------- |
+| `sirsavings.co.uk`   | United Kingdom | en-GB | £        | voucher codes |
+| `sirsavings.com`     | International  | en-US | $        | promo codes   |
+
+Region is detected from the hostname at runtime (`frontend/src/region.ts`); append
+`?region=uk` or `?region=us` to preview either variant locally. All brand/domain
+config lives in **one place** — `frontend/src/config.ts`. If your real domains differ,
+change them there and in the static SEO files under `frontend/public/`.
+
+## SEO
+
+The site ships with a full on-page SEO baseline:
+
+- Regional `<title>`, meta description & keywords (rewritten per-domain at runtime).
+- Open Graph + Twitter cards with a generated `public/og-image.png` (1200×630).
+- `hreflang` pairs linking the `.co.uk` and `.com` variants (`x-default` → `.com`).
+- Self-referential `canonical` set to the live origin.
+- JSON-LD `WebSite` (with Sitelinks Searchbox via `/?q=`) and `Organization`.
+- `robots.txt`, `sitemap.xml` (with regional alternates), and a PWA `site.webmanifest`.
+- A `<noscript>` crawlable fallback so the page is never empty to a bot.
+
+To regenerate the social image after editing `public/og-image.svg`:
+
+```bash
+cd frontend
+npm i --no-save @resvg/resvg-js
+node -e "import('@resvg/resvg-js').then(({Resvg})=>{const fs=require('fs');const r=new Resvg(fs.readFileSync('public/og-image.svg','utf8'),{fitTo:{mode:'width',value:1200}});fs.writeFileSync('public/og-image.png',r.render().asPng())})"
+```
 
 ## Project structure
 

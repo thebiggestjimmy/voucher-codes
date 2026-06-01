@@ -1,10 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import { api } from './api';
 import type { Category, Site, SortKey, Voucher } from './types';
 import { VoucherCard } from './components/VoucherCard';
 import { AddVoucherModal } from './components/AddVoucherModal';
 import { AddCategoryModal } from './components/AddCategoryModal';
+import { Logo } from './components/Logo';
+import { RegionSwitcher } from './components/RegionSwitcher';
+import { Hero } from './components/Hero';
+import { HowItWorks } from './components/HowItWorks';
+import { Footer } from './components/Footer';
+import { detectRegion } from './region';
+import { useRegionalSeo } from './seo';
 
 type Toast = { message: string; tone: 'info' | 'error' } | null;
 
@@ -18,12 +25,19 @@ function useDebounced<T>(value: T, ms: number): T {
 }
 
 function App() {
+  const [region] = useState(detectRegion);
+  useRegionalSeo(region);
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [totalCodes, setTotalCodes] = useState(0);
 
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
-  const [search, setSearch] = useState('');
+  // Seed the search from ?q= so the structured-data Sitelinks Searchbox works.
+  const [search, setSearch] = useState(
+    () => new URLSearchParams(window.location.search).get('q') ?? '',
+  );
   const [sort, setSort] = useState<SortKey>('top');
   const [includeExpired, setIncludeExpired] = useState(false);
 
@@ -32,6 +46,9 @@ function App() {
 
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<Toast>(null);
+
+  const browseRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const debouncedSearch = useDebounced(search, 250);
 
@@ -63,11 +80,22 @@ function App() {
     }
   }, [selectedCategory, debouncedSearch, includeExpired, sort, showToast]);
 
+  // Unfiltered total used for the hero "live codes" stat (non-critical).
+  const refreshTotalCodes = useCallback(async () => {
+    try {
+      const all = await api.listVouchers({ includeExpired: true });
+      setTotalCodes(all.length);
+    } catch {
+      // hero just shows what it can
+    }
+  }, []);
+
   useEffect(() => {
     loadCategoriesAndSites().catch((err) =>
       showToast(err instanceof Error ? err.message : 'Failed to load data', 'error'),
     );
-  }, [loadCategoriesAndSites, showToast]);
+    refreshTotalCodes();
+  }, [loadCategoriesAndSites, refreshTotalCodes, showToast]);
 
   useEffect(() => {
     loadVouchers();
@@ -78,6 +106,11 @@ function App() {
     () => categories.reduce((sum, c) => sum + c.siteCount, 0),
     [categories],
   );
+
+  const scrollToBrowse = useCallback(() => {
+    browseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => searchRef.current?.focus(), 350);
+  }, []);
 
   const handleVote = async (voucher: Voucher, direction: 'up' | 'down') => {
     try {
@@ -100,6 +133,7 @@ function App() {
       setSites((prev) => [...prev, newSite]);
     }
     setVouchers((prev) => [voucher, ...prev]);
+    setTotalCodes((n) => n + 1);
     loadCategoriesAndSites();
     showToast(`Voucher ${voucher.code} added for ${voucher.siteName}`);
   };
@@ -113,27 +147,43 @@ function App() {
   return (
     <div className="app">
       <header className="app__header">
-        <div className="app__brand">
-          <div className="app__logo">V</div>
-          <div>
-            <h1 className="app__title">VoucherVault</h1>
-            <p className="app__subtitle">Find &amp; share discount codes for your favourite sites</p>
-          </div>
-        </div>
+        <a className="app__brand" href="#top" aria-label={`${region.label} home`}>
+          <Logo size={38} withWordmark />
+        </a>
         <div className="app__header-actions">
-          <button className="btn" onClick={() => setShowAddCategory(true)}>
-            + Category
-          </button>
+          <a className="app__nav-link" href="#how-it-works">
+            How it works
+          </a>
+          <RegionSwitcher region={region} />
           <button className="btn btn--primary" onClick={() => setShowAddVoucher(true)}>
-            + Submit code
+            + Share a code
           </button>
         </div>
       </header>
 
-      <div className="app__body">
+      <span id="top" />
+
+      <Hero
+        region={region}
+        search={search}
+        setSearch={setSearch}
+        stats={{ codes: totalCodes, stores: allCategoryCount, categories: categories.length }}
+        onBrowse={scrollToBrowse}
+        onSubmit={() => setShowAddVoucher(true)}
+      />
+
+      <HowItWorks region={region} />
+
+      <div className="app__body" ref={browseRef} id="browse">
         <aside className="sidebar">
           <div className="sidebar__header">
             <p className="sidebar__title">Categories</p>
+            <button
+              className="btn btn--ghost btn--small"
+              onClick={() => setShowAddCategory(true)}
+            >
+              + Add
+            </button>
           </div>
           <ul className="sidebar__list">
             <li>
@@ -166,9 +216,21 @@ function App() {
         </aside>
 
         <main className="main">
+          <div className="main__head">
+            <h2 className="main__title">
+              {selectedCategory
+                ? `${categories.find((c) => c.id === selectedCategory)?.name ?? ''} ${region.term}`
+                : `Latest ${region.term}`}
+            </h2>
+            <p className="main__count">
+              {loading ? 'Loading…' : `${totalVouchers} ${totalVouchers === 1 ? 'code' : 'codes'}`}
+            </p>
+          </div>
+
           <div className="toolbar">
             <div className="search">
               <input
+                ref={searchRef}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by code, site, or description"
@@ -195,15 +257,15 @@ function App() {
 
           {loading ? (
             <div className="loading">
-              <span className="spinner" /> Loading vouchers…
+              <span className="spinner" /> Loading {region.term}…
             </div>
           ) : totalVouchers === 0 ? (
             <div className="empty">
-              <p className="empty__title">No vouchers found</p>
+              <p className="empty__title">No {region.term} found</p>
               <p>Try clearing your filters, or be the first to add one.</p>
               <div style={{ marginTop: 12 }}>
                 <button className="btn btn--primary" onClick={() => setShowAddVoucher(true)}>
-                  Submit a voucher
+                  Share a code
                 </button>
               </div>
             </div>
@@ -216,6 +278,16 @@ function App() {
           )}
         </main>
       </div>
+
+      <Footer
+        region={region}
+        categories={categories}
+        onPickCategory={(id) => {
+          setSelectedCategory(id);
+          scrollToBrowse();
+        }}
+        onSubmit={() => setShowAddVoucher(true)}
+      />
 
       {showAddVoucher && (
         <AddVoucherModal

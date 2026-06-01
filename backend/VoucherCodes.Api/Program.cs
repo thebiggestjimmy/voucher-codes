@@ -18,9 +18,15 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy(CorsPolicy, policy =>
         policy.WithOrigins(
+                // Local dev
                 "http://localhost:5173",
                 "http://localhost:4173",
-                "http://127.0.0.1:5173")
+                "http://127.0.0.1:5173",
+                // Production (SirSavings — regional domains)
+                "https://sirsavings.com",
+                "https://www.sirsavings.com",
+                "https://sirsavings.co.uk",
+                "https://www.sirsavings.co.uk")
             .AllowAnyHeader()
             .AllowAnyMethod());
 });
