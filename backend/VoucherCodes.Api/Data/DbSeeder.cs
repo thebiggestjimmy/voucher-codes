@@ -37,4 +37,34 @@ public static class DbSeeder
         );
         db.SaveChanges();
     }
+
+    /// <summary>
+    /// Idempotently adds the "Fitness Trackers" category (WHOOP + peers) so it
+    /// lands on databases that were seeded before this category existed. Safe to
+    /// run on every startup: it no-ops once the category is present and never
+    /// touches existing data.
+    /// </summary>
+    public static void EnsureFitnessTrackers(AppDbContext db)
+    {
+        db.Database.EnsureCreated();
+        if (db.Categories.Any(c => c.Name == "Fitness Trackers")) return;
+
+        var fitness = new Category { Name = "Fitness Trackers", Color = "#14b8a6" };
+        db.Categories.Add(fitness);
+        db.SaveChanges();
+
+        var whoop = new Site { Name = "WHOOP", Url = "https://www.whoop.com", CategoryId = fitness.Id };
+        var garmin = new Site { Name = "Garmin", Url = "https://www.garmin.com", CategoryId = fitness.Id };
+        var oura = new Site { Name = "Oura Ring", Url = "https://ouraring.com", CategoryId = fitness.Id };
+        db.Sites.AddRange(whoop, garmin, oura);
+        db.SaveChanges();
+
+        db.Vouchers.AddRange(
+            new Voucher { Code = "WHOOPFREE", Description = "One month free WHOOP membership for new members", SiteId = whoop.Id, SubmittedBy = "ada", Upvotes = 18 },
+            new Voucher { Code = "JOIN30", Description = "30-day free trial plus a free band on a 12-month membership", SiteId = whoop.Id, SubmittedBy = "marco", Upvotes = 11, ExpiresOn = DateTime.UtcNow.AddDays(45) },
+            new Voucher { Code = "GARMIN10", Description = "10% off your first Garmin wearable", SiteId = garmin.Id, SubmittedBy = "lena", Upvotes = 6 },
+            new Voucher { Code = "OURA40", Description = "£40 off the Oura Ring 4", SiteId = oura.Id, SubmittedBy = "sam", Upvotes = 8 }
+        );
+        db.SaveChanges();
+    }
 }

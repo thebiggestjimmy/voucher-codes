@@ -37,6 +37,9 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     DbSeeder.Seed(db);
+    // Idempotent top-up so categories added after the initial seed (e.g.
+    // Fitness Trackers / WHOOP) also reach already-populated databases.
+    DbSeeder.EnsureFitnessTrackers(db);
 }
 
 if (app.Environment.IsDevelopment())
