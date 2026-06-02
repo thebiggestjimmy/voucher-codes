@@ -4,6 +4,13 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 
+# Optional analytics config, baked in at build time (Vite inlines VITE_* env).
+# Leave empty to ship without any analytics snippet.
+ARG VITE_UMAMI_SRC=
+ARG VITE_UMAMI_WEBSITE_ID=
+ENV VITE_UMAMI_SRC=$VITE_UMAMI_SRC \
+    VITE_UMAMI_WEBSITE_ID=$VITE_UMAMI_WEBSITE_ID
+
 COPY package*.json ./
 RUN npm ci
 

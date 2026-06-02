@@ -9,3 +9,9 @@ sirsavings.com, www.sirsavings.com, sirsavings.co.uk, www.sirsavings.co.uk {
 	encode zstd gzip
 	reverse_proxy sirsavings-web:80
 }
+
+# Self-hosted Umami analytics dashboard + tracking script.
+analytics.sirsavings.com {
+	encode zstd gzip
+	reverse_proxy sirsavings-umami:3000
+}

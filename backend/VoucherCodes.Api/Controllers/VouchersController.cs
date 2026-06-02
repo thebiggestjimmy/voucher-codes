@@ -52,6 +52,7 @@ public class VouchersController : ControllerBase
         {
             "new" => query.OrderByDescending(v => v.SubmittedOn),
             "expiring" => query.OrderBy(v => v.ExpiresOn == null).ThenBy(v => v.ExpiresOn),
+            "popular" => query.OrderByDescending(v => v.RedeemCount).ThenByDescending(v => v.Upvotes - v.Downvotes),
             _ => query.OrderByDescending(v => v.Upvotes - v.Downvotes).ThenByDescending(v => v.SubmittedOn),
         };
 
@@ -59,7 +60,7 @@ public class VouchersController : ControllerBase
             .Take(200)
             .Select(v => new VoucherDto(
                 v.Id, v.Code, v.Description, v.ExpiresOn, v.SubmittedOn,
-                v.SubmittedBy, v.Upvotes, v.Downvotes,
+                v.SubmittedBy, v.Upvotes, v.Downvotes, v.RedeemCount,
                 v.SiteId, v.Site!.Name, v.Site!.Url,
                 v.Site!.CategoryId, v.Site!.Category!.Name, v.Site!.Category!.Color))
             .ToListAsync();
@@ -101,7 +102,7 @@ public class VouchersController : ControllerBase
             new VoucherDto(
                 voucher.Id, voucher.Code, voucher.Description, voucher.ExpiresOn,
                 voucher.SubmittedOn, voucher.SubmittedBy, voucher.Upvotes, voucher.Downvotes,
-                site.Id, site.Name, site.Url,
+                voucher.RedeemCount, site.Id, site.Name, site.Url,
                 site.CategoryId, site.Category!.Name, site.Category!.Color));
     }
 
@@ -122,10 +123,30 @@ public class VouchersController : ControllerBase
 
         await _db.SaveChangesAsync();
 
-        return Ok(new VoucherDto(
-            voucher.Id, voucher.Code, voucher.Description, voucher.ExpiresOn,
-            voucher.SubmittedOn, voucher.SubmittedBy, voucher.Upvotes, voucher.Downvotes,
-            voucher.SiteId, voucher.Site!.Name, voucher.Site!.Url,
-            voucher.Site!.CategoryId, voucher.Site!.Category!.Name, voucher.Site!.Category!.Color));
+        return Ok(ToDto(voucher));
     }
+
+    /// <summary>
+    /// Records an anonymous "code copied" event by bumping the redeem counter.
+    /// No identifiers are stored — just the aggregate count.
+    /// </summary>
+    [HttpPost("{id}/redeem")]
+    public async Task<ActionResult<VoucherDto>> Redeem(int id)
+    {
+        var voucher = await _db.Vouchers.Include(v => v.Site)!
+            .ThenInclude(s => s!.Category)
+            .FirstOrDefaultAsync(v => v.Id == id);
+        if (voucher is null) return NotFound();
+
+        voucher.RedeemCount++;
+        await _db.SaveChangesAsync();
+
+        return Ok(ToDto(voucher));
+    }
+
+    private static VoucherDto ToDto(Voucher voucher) => new(
+        voucher.Id, voucher.Code, voucher.Description, voucher.ExpiresOn,
+        voucher.SubmittedOn, voucher.SubmittedBy, voucher.Upvotes, voucher.Downvotes,
+        voucher.RedeemCount, voucher.SiteId, voucher.Site!.Name, voucher.Site!.Url,
+        voucher.Site!.CategoryId, voucher.Site!.Category!.Name, voucher.Site!.Category!.Color);
 }

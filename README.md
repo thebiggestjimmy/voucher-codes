@@ -76,11 +76,14 @@ Open `http://localhost:5173`. Vite proxies `/api/*` to the API, so no CORS hassl
 ## Features
 
 - Browse vouchers, filter by **category**, search across codes / sites / descriptions
-- Sort by **top voted / newest / expiring soon**, toggle expired codes in or out
+- Sort by **top voted / most used / newest / expiring soon**, toggle expired codes in or out
 - **Submit a voucher** — either pick an existing site or add a brand new one (and assign it a category)
 - **Add new categories** with a chosen colour swatch
 - **Upvote / downvote** existing codes; **one-click copy** to clipboard
 - Expiry dates highlighted (orange = soon, red = expired)
+- **Anonymous usage counts** — each copy bumps a per-voucher counter ("Used N
+  times") and powers the *Most used* sort. No identifiers stored, no consent
+  banner needed.
 
 ## API endpoints
 
@@ -93,6 +96,7 @@ Open `http://localhost:5173`. Vite proxies `/api/*` to the API, so no CORS hassl
 | GET    | `/api/vouchers?...`               | List vouchers (filter + sort + search)    |
 | POST   | `/api/vouchers`                   | Submit a voucher                          |
 | POST   | `/api/vouchers/{id}/vote`         | Upvote or downvote a voucher              |
+| POST   | `/api/vouchers/{id}/redeem`       | Record an anonymous copy (usage counter)  |
 
 ## Production build
 
@@ -136,3 +140,27 @@ sirsavings.com, www.sirsavings.com, sirsavings.co.uk, www.sirsavings.co.uk {
 Both domains point at the same container — the SPA selects UK vs international
 copy from the request hostname. The SQLite database persists in the
 `vouchers-data` volume across redeploys.
+
+### Analytics (self-hosted Umami)
+
+The compose stack includes an optional [Umami](https://umami.is/) instance
+(`sirsavings-umami` + a Postgres `sirsavings-umami-db`). Umami is cookie-free
+and stores no personal data, so it needs **no consent banner**. Setup:
+
+1. `cp .env.example .env` and set a strong `UMAMI_DB_PASSWORD` + `UMAMI_APP_SECRET`.
+2. `docker compose up -d --build` — this also starts Umami.
+3. Add the `analytics.<your-domain>` block from `deploy/Caddyfile.example` and
+   reload Caddy.
+4. Open `https://analytics.<your-domain>`, log in (default `admin` / `umami` —
+   **change it immediately**), and add a website.
+5. Copy that website's **Website ID** into `.env` (`UMAMI_WEBSITE_ID=…`), keep
+   `UMAMI_SCRIPT_URL` pointing at `https://analytics.<your-domain>/script.js`,
+   then `docker compose up -d --build frontend` to bake the snippet in.
+
+If `UMAMI_WEBSITE_ID` is blank the frontend ships with **no** analytics snippet,
+so local/dev builds stay tracking-free.
+
+> **First-party vs Umami:** the per-voucher "Used N times" counters live in the
+> app's own SQLite DB (great for product engagement and the *Most used* sort);
+> Umami covers site-wide traffic, sources and SEO performance. They're
+> complementary.

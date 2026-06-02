@@ -4,6 +4,7 @@ import type { Voucher } from '../types';
 interface Props {
   voucher: Voucher;
   onVote: (direction: 'up' | 'down') => void;
+  onRedeem: () => void;
 }
 
 function formatDate(iso: string | null): string | null {
@@ -18,7 +19,7 @@ function daysUntil(iso: string | null): number | null {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
-export function VoucherCard({ voucher, onVote }: Props) {
+export function VoucherCard({ voucher, onVote, onRedeem }: Props) {
   const [copied, setCopied] = useState(false);
   const score = voucher.upvotes - voucher.downvotes;
   const days = daysUntil(voucher.expiresOn);
@@ -31,8 +32,10 @@ export function VoucherCard({ voucher, onVote }: Props) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
     } catch {
-      // ignore
+      // ignore clipboard failures
     }
+    // Count the copy regardless — it's the clearest signal of intent to use.
+    onRedeem();
   };
 
   return (
@@ -92,6 +95,12 @@ export function VoucherCard({ voucher, onVote }: Props) {
             </span>
           )}
           <span>{voucher.upvotes} up · {voucher.downvotes} down</span>
+          {voucher.redeemCount > 0 && (
+            <span className="voucher__used">
+              Used {voucher.redeemCount.toLocaleString()}{' '}
+              {voucher.redeemCount === 1 ? 'time' : 'times'}
+            </span>
+          )}
         </div>
       </div>
 

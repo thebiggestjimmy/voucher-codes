@@ -24,6 +24,7 @@ export interface Voucher {
   submittedBy: string;
   upvotes: number;
   downvotes: number;
+  redeemCount: number;
   siteId: number;
   siteName: string;
   siteUrl: string;
@@ -32,4 +33,4 @@ export interface Voucher {
   categoryColor: string;
 }
 
-export type SortKey = 'top' | 'new' | 'expiring';
+export type SortKey = 'top' | 'new' | 'expiring' | 'popular';

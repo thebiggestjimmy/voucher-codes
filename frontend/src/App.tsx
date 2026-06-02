@@ -127,6 +127,23 @@ function App() {
     }
   };
 
+  const handleRedeem = async (voucher: Voucher) => {
+    // Optimistically bump the count, then reconcile with the server.
+    setVouchers((prev) =>
+      prev.map((v) => (v.id === voucher.id ? { ...v, redeemCount: v.redeemCount + 1 } : v)),
+    );
+    try {
+      const updated = await api.redeemVoucher(voucher.id);
+      setVouchers((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
+    } catch {
+      setVouchers((prev) =>
+        prev.map((v) =>
+          v.id === voucher.id ? { ...v, redeemCount: Math.max(0, v.redeemCount - 1) } : v,
+        ),
+      );
+    }
+  };
+
   const handleVoucherCreated = (voucher: Voucher, newSite?: Site) => {
     setShowAddVoucher(false);
     if (newSite) {
@@ -242,6 +259,7 @@ function App() {
               onChange={(e) => setSort(e.target.value as SortKey)}
             >
               <option value="top">Top voted</option>
+              <option value="popular">Most used</option>
               <option value="new">Newest</option>
               <option value="expiring">Expiring soon</option>
             </select>
@@ -272,7 +290,12 @@ function App() {
           ) : (
             <div className="voucher-list">
               {vouchers.map((v) => (
-                <VoucherCard key={v.id} voucher={v} onVote={(d) => handleVote(v, d)} />
+                <VoucherCard
+                  key={v.id}
+                  voucher={v}
+                  onVote={(d) => handleVote(v, d)}
+                  onRedeem={() => handleRedeem(v)}
+                />
               ))}
             </div>
           )}

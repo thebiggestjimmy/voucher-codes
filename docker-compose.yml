@@ -37,6 +37,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # Wire up the Umami snippet at build time (see .env). Leave blank to
+        # ship with no analytics.
+        VITE_UMAMI_SRC: ${UMAMI_SCRIPT_URL:-}
+        VITE_UMAMI_WEBSITE_ID: ${UMAMI_WEBSITE_ID:-}
     image: sirsavings-web
     container_name: sirsavings-web
     restart: unless-stopped
@@ -50,8 +55,39 @@ services:
     # ports:
     #   - "8088:80"
 
+  # ── Privacy-friendly analytics (self-hosted Umami) ──────────
+  # No cookies, no personal data, no consent banner needed. After the first
+  # deploy, open https://analytics.<your-domain> create a website, then put its
+  # script URL + ID in .env and rebuild the frontend so the snippet is included.
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    container_name: sirsavings-umami
+    restart: unless-stopped
+    depends_on:
+      - umami-db
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:-umami}@umami-db:5432/umami
+      DATABASE_TYPE: postgresql
+      APP_SECRET: ${UMAMI_APP_SECRET:-please-change-this-secret}
+    networks:
+      - internal
+      - web
+
+  umami-db:
+    image: postgres:16-alpine
+    container_name: sirsavings-umami-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD:-umami}
+    volumes:
+      - umami-db-data:/var/lib/postgresql/data
+    networks:
+      - internal
+
 networks:
-  # Private network for frontend ⇄ backend traffic.
+  # Private network for frontend ⇄ backend ⇄ analytics traffic.
   internal:
     driver: bridge
   # Shared, externally-created network Caddy lives on. Created by your Caddy
@@ -62,3 +98,4 @@ networks:
 
 volumes:
   vouchers-data:
+  umami-db-data:

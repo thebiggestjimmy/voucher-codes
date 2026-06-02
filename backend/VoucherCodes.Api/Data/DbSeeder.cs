@@ -1,9 +1,56 @@
+using System.Data;
+using Microsoft.EntityFrameworkCore;
 using VoucherCodes.Api.Models;
 
 namespace VoucherCodes.Api.Data;
 
 public static class DbSeeder
 {
+    /// <summary>
+    /// Applies columns added to the model after the database was first created.
+    /// EnsureCreated() never alters an existing schema, so on production
+    /// databases we add new columns ourselves. SQLite ADD COLUMN is cheap and
+    /// this is guarded to run at most once per column.
+    /// </summary>
+    public static void EnsureSchema(AppDbContext db)
+    {
+        db.Database.EnsureCreated();
+
+        if (!ColumnExists(db, "Vouchers", "RedeemCount"))
+        {
+            db.Database.ExecuteSqlRaw(
+                "ALTER TABLE \"Vouchers\" ADD COLUMN \"RedeemCount\" INTEGER NOT NULL DEFAULT 0;");
+        }
+    }
+
+    private static bool ColumnExists(AppDbContext db, string table, string column)
+    {
+        var conn = db.Database.GetDbConnection();
+        var opened = false;
+        if (conn.State != ConnectionState.Open)
+        {
+            conn.Open();
+            opened = true;
+        }
+        try
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"PRAGMA table_info(\"{table}\");";
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                // PRAGMA table_info columns: cid, name, type, ...
+                if (string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
+        finally
+        {
+            if (opened) conn.Close();
+        }
+    }
+
     public static void Seed(AppDbContext db)
     {
         db.Database.EnsureCreated();

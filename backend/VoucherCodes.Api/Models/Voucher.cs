@@ -23,6 +23,9 @@ public class Voucher
     public int Upvotes { get; set; }
     public int Downvotes { get; set; }
 
+    /// <summary>Anonymous count of how many times this code has been copied.</summary>
+    public int RedeemCount { get; set; }
+
     public int SiteId { get; set; }
     public Site? Site { get; set; }
 }

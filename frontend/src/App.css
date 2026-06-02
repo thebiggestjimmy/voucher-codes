@@ -410,6 +410,11 @@
   flex-wrap: wrap;
 }
 
+.voucher__used {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 .voucher__expiring {
   color: var(--warning);
   font-weight: 600;

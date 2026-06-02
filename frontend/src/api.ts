@@ -74,4 +74,6 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ direction }),
     }),
+  redeemVoucher: (id: number) =>
+    request<Voucher>(`${base}/vouchers/${id}/redeem`, { method: 'POST' }),
 };

@@ -37,8 +37,10 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     DbSeeder.Seed(db);
-    // Idempotent top-up so categories added after the initial seed (e.g.
-    // Fitness Trackers / WHOOP) also reach already-populated databases.
+    // Idempotent top-ups so schema/data added after the initial seed also reach
+    // already-populated production databases. Order matters: add the column
+    // before any insert (EnsureFitnessTrackers) references it.
+    DbSeeder.EnsureSchema(db);
     DbSeeder.EnsureFitnessTrackers(db);
 }
 
