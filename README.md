@@ -58,10 +58,12 @@ You'll need **.NET 8 SDK** and **Node 20+**.
 
 ```bash
 cd backend/VoucherCodes.Api
-dotnet run
+ADMIN_PASSWORD=your-password-here dotnet run
 ```
 
 It listens on `http://localhost:5080`. On first start it creates `vouchers.db` and seeds a handful of sample categories, sites, and vouchers. Swagger UI is at `http://localhost:5080/swagger`.
+
+Set the admin password via the `ADMIN_PASSWORD` environment variable (or `Admin:Password` in `appsettings.json`). If neither is set, the password falls back to `changeme` and a warning is logged at startup.
 
 ### 2. Start the frontend
 
@@ -84,19 +86,67 @@ Open `http://localhost:5173`. Vite proxies `/api/*` to the API, so no CORS hassl
 - **Anonymous usage counts** — each copy bumps a per-voucher counter ("Used N
   times") and powers the *Most used* sort. No identifiers stored, no consent
   banner needed.
+- **Moderation workflow** — seeded codes are pre-approved and visible; user-submitted codes go into a hidden pending queue and only appear once an admin approves them via the **Review** button in the header.
+- **Password-protected admin area** — sign in from the header to reveal Review, category management, and voucher deletion. Codes an admin submits are published immediately; codes anonymous users submit still go through moderation.
+- **Per-URL SEO** — real crawlable URLs (`/category/:slug`, `/site/:slug`), per-page `<title>` / `<meta>` / OpenGraph via `react-helmet-async`, JSON-LD structured data (`Offer`, `ItemList`, `BreadcrumbList`, `Organization`, `CollectionPage`, `WebSite`), and a build-time prerender step (`npm run build:seo`) that emits fully-rendered HTML per URL plus a live `sitemap.xml` + `robots.txt`. Complements the regional shell SEO already in `src/seo.ts`.
+
+### Personal Finance + Tide
+
+The seeder ships a **Personal Finance** category (Tide, Monzo, Starling Bank) with
+starter codes (`TIDE100`, `TIDEFREE`, `TIDEREF50`, `MONZO5`, `STARLING10`). Like the
+Fitness Trackers top-up, it runs idempotently on every startup so it also lands on
+already-populated production databases.
 
 ## API endpoints
 
-| Method | Path                              | Purpose                                   |
-| ------ | --------------------------------- | ----------------------------------------- |
-| GET    | `/api/categories`                 | List all categories with site counts      |
-| POST   | `/api/categories`                 | Create a category                         |
-| GET    | `/api/sites?categoryId=&search=`  | List sites (optionally filtered)          |
-| POST   | `/api/sites`                      | Create a site                             |
-| GET    | `/api/vouchers?...`               | List vouchers (filter + sort + search)    |
-| POST   | `/api/vouchers`                   | Submit a voucher                          |
-| POST   | `/api/vouchers/{id}/vote`         | Upvote or downvote a voucher              |
-| POST   | `/api/vouchers/{id}/redeem`       | Record an anonymous copy (usage counter)  |
+Admin-only endpoints require an `Authorization: Bearer <token>` header — the token is returned by `/api/admin/login`.
+
+| Method | Path                                   | Auth  | Purpose                                                          |
+| ------ | -------------------------------------- | ----- | ---------------------------------------------------------------- |
+| POST   | `/api/admin/login`                     | —     | Exchange the admin password for a session token                   |
+| GET    | `/api/admin/me`                        | admin | Check whether the current token is still valid                    |
+| POST   | `/api/admin/logout`                    | —     | Invalidate the caller's token                                     |
+| GET    | `/api/categories`                      | —     | List all categories with site counts                              |
+| GET    | `/api/categories/by-slug/{slug}`       | —     | Look up a category by URL slug                                    |
+| POST   | `/api/categories`                      | admin | Create a category                                                 |
+| PUT    | `/api/categories/{id}`                 | admin | Rename / recolour / redescribe a category                          |
+| DELETE | `/api/categories/{id}`                 | admin | Delete a category (must be empty)                                 |
+| GET    | `/api/sites?categoryId=&search=`       | —     | List sites (optionally filtered)                                  |
+| GET    | `/api/sites/by-slug/{slug}`            | —     | Look up a site by URL slug                                        |
+| POST   | `/api/sites`                           | —     | Create a site                                                     |
+| GET    | `/api/vouchers?...&status=approved`    | —     | List approved vouchers (`status=pending\|all` requires admin)     |
+| GET    | `/api/vouchers/pending-count`          | admin | How many vouchers are waiting for review                          |
+| POST   | `/api/vouchers`                        | mixed | Submit a voucher — anonymous → pending; admin → auto-approved     |
+| POST   | `/api/vouchers/{id}/vote`              | —     | Upvote or downvote                                                |
+| POST   | `/api/vouchers/{id}/redeem`            | —     | Record an anonymous copy (usage counter)                          |
+| POST   | `/api/vouchers/{id}/approve`           | admin | Approve a pending voucher                                         |
+| DELETE | `/api/vouchers/{id}`                   | admin | Reject / delete a voucher                                         |
+
+## Per-URL SEO / prerender pipeline
+
+The regional shell SEO (in `src/seo.ts`) handles the domain-level branding — title, hreflang, OG, JSON-LD `WebSite` + `Organization`. On top of that, every page mounts its own `react-helmet-async` `<Helmet>` with page-specific `<title>`, `meta description`, `canonical`, OpenGraph tags, and JSON-LD (`Offer`, `ItemList`, `BreadcrumbList`, `CollectionPage`).
+
+`npm run build:seo` runs `vite build` and then a headless-Chromium prerender step that walks every URL, waits for data to settle, dedupes the head, rewrites `localhost` to `PUBLIC_BASE`, and writes:
+
+- `dist/<route>/index.html` per URL (home, `/submit`, every `/category/:slug`, every `/site/:slug`)
+- `dist/sitemap.xml` listing all of the above with priorities
+- `dist/robots.txt` pointing at the sitemap
+
+```bash
+# terminal 1
+cd backend/VoucherCodes.Api && ADMIN_PASSWORD=letmein dotnet run
+
+# terminal 2
+cd frontend
+npm run build             # SPA shell
+npm run preview -- --port 4173 &
+API_BASE=http://localhost:5080 \
+FRONTEND_BASE=http://localhost:4173 \
+PUBLIC_BASE=https://sirsavings.com \
+npm run prerender
+```
+
+Serve `dist/` from any static host — nginx, Caddy, S3, Cloudflare Pages. Every `/category/:slug` and `/site/:slug` URL now serves fully-rendered HTML (with the correct `<title>`, description, canonical, OpenGraph tags, JSON-LD schemas and visible voucher content) before React hydrates on top.
 
 ## Production build
 

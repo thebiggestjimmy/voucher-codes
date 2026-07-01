@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { Voucher } from '../types';
 
 interface Props {
@@ -6,8 +7,10 @@ interface Props {
   onVote: (direction: 'up' | 'down') => void;
   onRedeem: () => void;
   mode?: 'public' | 'review';
+  isAdmin?: boolean;
   onApprove?: () => void;
   onReject?: () => void;
+  onDelete?: () => void;
 }
 
 function formatDate(iso: string | null): string | null {
@@ -27,8 +30,10 @@ export function VoucherCard({
   onVote,
   onRedeem,
   mode = 'public',
+  isAdmin = false,
   onApprove,
   onReject,
+  onDelete,
 }: Props) {
   const [copied, setCopied] = useState(false);
   const score = voucher.upvotes - voucher.downvotes;
@@ -45,12 +50,14 @@ export function VoucherCard({
     } catch {
       // ignore clipboard failures
     }
-    // Count the copy regardless — it's the clearest signal of intent to use.
     onRedeem();
   };
 
   return (
-    <article className={`voucher ${isReview ? 'voucher--pending' : ''}`}>
+    <article
+      id={`voucher-${voucher.id}`}
+      className={`voucher ${isReview ? 'voucher--pending' : ''}`}
+    >
       <div className="voucher__votes">
         <button
           type="button"
@@ -77,13 +84,15 @@ export function VoucherCard({
         <div className="voucher__top">
           <span className="voucher__code">{voucher.code}</span>
           <span className="voucher__site">
-            <a href={voucher.siteUrl} target="_blank" rel="noreferrer noopener">
-              {voucher.siteName}
-            </a>
+            <Link to={`/site/${voucher.siteSlug}`}>{voucher.siteName}</Link>
           </span>
-          <span className="tag" style={{ background: voucher.categoryColor }}>
+          <Link
+            to={`/category/${voucher.categorySlug}`}
+            className="tag"
+            style={{ background: voucher.categoryColor }}
+          >
             {voucher.categoryName}
-          </span>
+          </Link>
           {isReview && <span className="tag tag--pending">Pending review</span>}
         </div>
 
@@ -141,13 +150,24 @@ export function VoucherCard({
             </button>
           </>
         ) : (
-          <button
-            type="button"
-            className={`copy-btn ${copied ? 'copy-btn--copied' : ''}`}
-            onClick={copy}
-          >
-            {copied ? 'Copied!' : 'Copy code'}
-          </button>
+          <>
+            <button
+              type="button"
+              className={`copy-btn ${copied ? 'copy-btn--copied' : ''}`}
+              onClick={copy}
+            >
+              {copied ? 'Copied!' : 'Copy code'}
+            </button>
+            {isAdmin && onDelete && (
+              <button
+                type="button"
+                className="btn btn--danger btn--small"
+                onClick={onDelete}
+              >
+                Delete
+              </button>
+            )}
+          </>
         )}
       </div>
     </article>

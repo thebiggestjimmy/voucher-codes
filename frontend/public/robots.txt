@@ -1,7 +1,0 @@
-# SirSavings — allow everything, point crawlers at the sitemap.
-User-agent: *
-Allow: /
-
-# Replace the host below with the matching domain when serving .co.uk
-# (https://sirsavings.co.uk/sitemap.xml).
-Sitemap: https://sirsavings.com/sitemap.xml

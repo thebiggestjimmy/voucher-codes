@@ -1,16 +1,21 @@
 export interface Category {
   id: number;
   name: string;
+  slug: string;
   color: string;
+  description: string;
   siteCount: number;
 }
 
 export interface Site {
   id: number;
   name: string;
+  slug: string;
   url: string;
+  description: string;
   categoryId: number;
   categoryName: string;
+  categorySlug: string;
   categoryColor: string;
   voucherCount: number;
 }
@@ -28,9 +33,11 @@ export interface Voucher {
   isApproved: boolean;
   siteId: number;
   siteName: string;
+  siteSlug: string;
   siteUrl: string;
   categoryId: number;
   categoryName: string;
+  categorySlug: string;
   categoryColor: string;
 }
 

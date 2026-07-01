@@ -187,10 +187,9 @@ public class VouchersController : ControllerBase
         return NoContent();
     }
 
-    private static VoucherDto ToDto(Voucher voucher) => new(
-        voucher.Id, voucher.Code, voucher.Description, voucher.ExpiresOn,
-        voucher.SubmittedOn, voucher.SubmittedBy, voucher.Upvotes, voucher.Downvotes,
-        voucher.RedeemCount, voucher.IsApproved,
-        voucher.SiteId, voucher.Site!.Name, voucher.Site!.Url,
-        voucher.Site!.CategoryId, voucher.Site!.Category!.Name, voucher.Site!.Category!.Color);
+    private static VoucherDto ToDto(Voucher v) => new(
+        v.Id, v.Code, v.Description, v.ExpiresOn, v.SubmittedOn,
+        v.SubmittedBy, v.Upvotes, v.Downvotes, v.RedeemCount, v.IsApproved,
+        v.SiteId, v.Site!.Name, v.Site!.Slug, v.Site!.Url,
+        v.Site!.CategoryId, v.Site!.Category!.Name, v.Site!.Category!.Slug, v.Site!.Category!.Color);
 }

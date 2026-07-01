@@ -2,9 +2,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace VoucherCodes.Api.Dtos;
 
-public record CategoryDto(int Id, string Name, string Color, int SiteCount);
+public record CategoryDto(int Id, string Name, string Slug, string Color, string Description, int SiteCount);
 
-public record SiteDto(int Id, string Name, string Url, int CategoryId, string CategoryName, string CategoryColor, int VoucherCount);
+public record SiteDto(
+    int Id, string Name, string Slug, string Url, string Description,
+    int CategoryId, string CategoryName, string CategorySlug, string CategoryColor,
+    int VoucherCount);
 
 public record VoucherDto(
     int Id,
@@ -19,9 +22,11 @@ public record VoucherDto(
     bool IsApproved,
     int SiteId,
     string SiteName,
+    string SiteSlug,
     string SiteUrl,
     int CategoryId,
     string CategoryName,
+    string CategorySlug,
     string CategoryColor);
 
 public class CreateCategoryRequest
@@ -31,6 +36,9 @@ public class CreateCategoryRequest
 
     [MaxLength(20)]
     public string Color { get; set; } = "#64748b";
+
+    [MaxLength(1000)]
+    public string Description { get; set; } = string.Empty;
 }
 
 public class CreateSiteRequest
@@ -44,6 +52,9 @@ public class CreateSiteRequest
 
     [Required]
     public int CategoryId { get; set; }
+
+    [MaxLength(2000)]
+    public string Description { get; set; } = string.Empty;
 }
 
 public class CreateVoucherRequest
@@ -76,4 +87,7 @@ public class UpdateCategoryRequest
 
     [MaxLength(20)]
     public string Color { get; set; } = "#64748b";
+
+    [MaxLength(1000)]
+    public string Description { get; set; } = string.Empty;
 }

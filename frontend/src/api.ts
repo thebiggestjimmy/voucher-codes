@@ -48,15 +48,17 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   listCategories: () => request<Category[]>(`${base}/categories`),
-  createCategory: (input: { name: string; color: string }) =>
+  getCategoryBySlug: (slug: string) =>
+    request<Category>(`${base}/categories/by-slug/${encodeURIComponent(slug)}`),
+  createCategory: (input: { name: string; color: string; description?: string }) =>
     request<Category>(`${base}/categories`, {
       method: 'POST',
-      body: JSON.stringify(input),
+      body: JSON.stringify({ description: '', ...input }),
     }),
-  updateCategory: (id: number, input: { name: string; color: string }) =>
+  updateCategory: (id: number, input: { name: string; color: string; description?: string }) =>
     request<Category>(`${base}/categories/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(input),
+      body: JSON.stringify({ description: '', ...input }),
     }),
   deleteCategory: (id: number) =>
     request<void>(`${base}/categories/${id}`, { method: 'DELETE' }),
@@ -68,10 +70,17 @@ export const api = {
     const qs = query.toString();
     return request<Site[]>(`${base}/sites${qs ? `?${qs}` : ''}`);
   },
-  createSite: (input: { name: string; url: string; categoryId: number }) =>
+  getSiteBySlug: (slug: string) =>
+    request<Site>(`${base}/sites/by-slug/${encodeURIComponent(slug)}`),
+  createSite: (input: {
+    name: string;
+    url: string;
+    categoryId: number;
+    description?: string;
+  }) =>
     request<Site>(`${base}/sites`, {
       method: 'POST',
-      body: JSON.stringify(input),
+      body: JSON.stringify({ description: '', ...input }),
     }),
 
   listVouchers: (params?: {
