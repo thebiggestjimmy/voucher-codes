@@ -68,3 +68,12 @@ public class VoteRequest
     [Required]
     public string Direction { get; set; } = "up";
 }
+
+public class UpdateCategoryRequest
+{
+    [Required, MaxLength(80)]
+    public string Name { get; set; } = string.Empty;
+
+    [MaxLength(20)]
+    public string Color { get; set; } = "#64748b";
+}

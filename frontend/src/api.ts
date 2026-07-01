@@ -1,12 +1,37 @@
+import { admin } from './admin';
 import type { Category, Site, SortKey, Voucher, VoucherStatus } from './types';
 
 const base = '/api';
 
+export class UnauthorizedError extends Error {
+  constructor(message = 'Unauthorized') {
+    super(message);
+    this.name = 'UnauthorizedError';
+  }
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-  });
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(init?.headers as Record<string, string> | undefined),
+  };
+  const token = admin.getToken();
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const response = await fetch(url, { ...init, headers });
+
+  if (response.status === 401) {
+    admin.clearToken();
+    let message = 'Your admin session has expired. Please sign in again.';
+    try {
+      const body = await response.json();
+      if (body?.error) message = body.error;
+    } catch {
+      // ignore
+    }
+    throw new UnauthorizedError(message);
+  }
+
   if (!response.ok) {
     let message = `Request failed: ${response.status}`;
     try {
@@ -28,6 +53,13 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(input),
     }),
+  updateCategory: (id: number, input: { name: string; color: string }) =>
+    request<Category>(`${base}/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    }),
+  deleteCategory: (id: number) =>
+    request<void>(`${base}/categories/${id}`, { method: 'DELETE' }),
 
   listSites: (params?: { categoryId?: number; search?: string }) => {
     const query = new URLSearchParams();
@@ -84,4 +116,13 @@ export const api = {
     request<Voucher>(`${base}/vouchers/${id}/approve`, { method: 'POST' }),
   deleteVoucher: (id: number) =>
     request<void>(`${base}/vouchers/${id}`, { method: 'DELETE' }),
+
+  adminLogin: (password: string) =>
+    request<{ token: string }>(`${base}/admin/login`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    }),
+  adminMe: () => request<{ authenticated: boolean }>(`${base}/admin/me`),
+  adminLogout: () =>
+    request<void>(`${base}/admin/logout`, { method: 'POST' }),
 };

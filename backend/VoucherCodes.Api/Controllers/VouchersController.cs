@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using VoucherCodes.Api.Data;
 using VoucherCodes.Api.Dtos;
+using VoucherCodes.Api.Filters;
 using VoucherCodes.Api.Models;
+using VoucherCodes.Api.Services;
 
 namespace VoucherCodes.Api.Controllers;
 
@@ -11,8 +13,15 @@ namespace VoucherCodes.Api.Controllers;
 public class VouchersController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly AdminAuthService _auth;
 
-    public VouchersController(AppDbContext db) => _db = db;
+    public VouchersController(AppDbContext db, AdminAuthService auth)
+    {
+        _db = db;
+        _auth = auth;
+    }
+
+    private bool IsAdmin() => _auth.Validate(AdminAuthService.ExtractToken(HttpContext));
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<VoucherDto>>> Get(
@@ -28,7 +37,11 @@ public class VouchersController : ControllerBase
                 .ThenInclude(s => s!.Category)
             .AsQueryable();
 
-        query = status.ToLowerInvariant() switch
+        var statusLower = status.ToLowerInvariant();
+        if ((statusLower == "pending" || statusLower == "all") && !IsAdmin())
+            return Unauthorized(new { error = "Admin authentication required to view pending vouchers." });
+
+        query = statusLower switch
         {
             "pending" => query.Where(v => !v.IsApproved),
             "all" => query,
@@ -69,6 +82,7 @@ public class VouchersController : ControllerBase
     }
 
     [HttpGet("pending-count")]
+    [AdminOnly]
     public async Task<ActionResult<object>> PendingCount()
     {
         var count = await _db.Vouchers.CountAsync(v => !v.IsApproved);
@@ -100,7 +114,7 @@ public class VouchersController : ControllerBase
             SubmittedBy = string.IsNullOrWhiteSpace(request.SubmittedBy) ? "anonymous" : request.SubmittedBy.Trim(),
             SiteId = site.Id,
             SubmittedOn = DateTime.UtcNow,
-            IsApproved = false,
+            IsApproved = IsAdmin(),
         };
 
         _db.Vouchers.Add(voucher);
@@ -149,6 +163,7 @@ public class VouchersController : ControllerBase
     }
 
     [HttpPost("{id}/approve")]
+    [AdminOnly]
     public async Task<ActionResult<VoucherDto>> Approve(int id)
     {
         var voucher = await _db.Vouchers.Include(v => v.Site)!
@@ -162,6 +177,7 @@ public class VouchersController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [AdminOnly]
     public async Task<IActionResult> Delete(int id)
     {
         var voucher = await _db.Vouchers.FindAsync(id);

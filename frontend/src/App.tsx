@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
-import { api } from './api';
+import { api, UnauthorizedError } from './api';
+import { admin } from './admin';
 import type { Category, Site, SortKey, Voucher } from './types';
 import { VoucherCard } from './components/VoucherCard';
 import { AddVoucherModal } from './components/AddVoucherModal';
 import { AddCategoryModal } from './components/AddCategoryModal';
+import { LoginModal } from './components/LoginModal';
+import { ManageCategoriesModal } from './components/ManageCategoriesModal';
 import { Logo } from './components/Logo';
 import { RegionSwitcher } from './components/RegionSwitcher';
 import { Hero } from './components/Hero';
@@ -31,6 +34,9 @@ function App() {
 
   const [view, setView] = useState<View>('public');
   const [pendingCount, setPendingCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState<boolean>(!!admin.getToken());
+  const [showLogin, setShowLogin] = useState(false);
+  const [showManageCategories, setShowManageCategories] = useState(false);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
@@ -79,6 +85,10 @@ function App() {
       });
       setVouchers(results);
     } catch (err) {
+      if (err instanceof UnauthorizedError) {
+        setIsAdmin(false);
+        setView('public');
+      }
       showToast(err instanceof Error ? err.message : 'Failed to load vouchers', 'error');
     } finally {
       setLoading(false);
@@ -86,6 +96,10 @@ function App() {
   }, [view, selectedCategory, debouncedSearch, includeExpired, sort, showToast]);
 
   const refreshPendingCount = useCallback(async () => {
+    if (!admin.getToken()) {
+      setPendingCount(0);
+      return;
+    }
     try {
       const { count } = await api.pendingCount();
       setPendingCount(count);
@@ -105,12 +119,35 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const unsub = admin.subscribe((token) => setIsAdmin(!!token));
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      if (!admin.getToken()) return;
+      try {
+        await api.adminMe();
+        setIsAdmin(true);
+      } catch (err) {
+        if (err instanceof UnauthorizedError) {
+          setIsAdmin(false);
+          setView('public');
+        }
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
     loadCategoriesAndSites().catch((err) =>
       showToast(err instanceof Error ? err.message : 'Failed to load data', 'error'),
     );
     refreshTotalCodes();
+  }, [loadCategoriesAndSites, refreshTotalCodes, showToast]);
+
+  useEffect(() => {
     refreshPendingCount();
-  }, [loadCategoriesAndSites, refreshTotalCodes, refreshPendingCount, showToast]);
+  }, [refreshPendingCount, isAdmin]);
 
   useEffect(() => {
     loadVouchers();
@@ -206,6 +243,25 @@ function App() {
     showToast(`Category "${category.name}" added`);
   };
 
+  const handleSignOut = async () => {
+    try {
+      await api.adminLogout();
+    } catch {
+      // ignore
+    }
+    admin.clearToken();
+    setView('public');
+    setShowManageCategories(false);
+    showToast('Signed out');
+  };
+
+  const handleSignedIn = async () => {
+    setShowLogin(false);
+    setIsAdmin(true);
+    refreshPendingCount();
+    showToast('Signed in as admin');
+  };
+
   return (
     <div className="app">
       <header className="app__header">
@@ -217,19 +273,38 @@ function App() {
             How it works
           </a>
           <RegionSwitcher region={region} />
-          <button
-            className={`btn ${view === 'review' ? 'btn--primary' : ''}`}
-            onClick={() => setView(view === 'review' ? 'public' : 'review')}
-            title="Review pending submissions"
-          >
-            {view === 'review' ? 'Back to codes' : 'Review'}
-            {pendingCount > 0 && view !== 'review' && (
-              <span className="btn__badge">{pendingCount}</span>
-            )}
-          </button>
+          {isAdmin && (
+            <>
+              <button
+                className={`btn ${view === 'review' ? 'btn--primary' : ''}`}
+                onClick={() => setView(view === 'review' ? 'public' : 'review')}
+                title="Review pending submissions"
+              >
+                {view === 'review' ? 'Back to codes' : 'Review'}
+                {pendingCount > 0 && view !== 'review' && (
+                  <span className="btn__badge">{pendingCount}</span>
+                )}
+              </button>
+              <button className="btn" onClick={() => setShowManageCategories(true)}>
+                Manage
+              </button>
+            </>
+          )}
           <button className="btn btn--primary" onClick={() => setShowAddVoucher(true)}>
-            + Share a code
+            + {isAdmin ? 'Add code' : 'Share a code'}
           </button>
+          {isAdmin ? (
+            <>
+              <span className="app__admin-chip">Admin</span>
+              <button className="btn btn--ghost" onClick={handleSignOut}>
+                Sign out
+              </button>
+            </>
+          ) : (
+            <button className="btn btn--ghost" onClick={() => setShowLogin(true)}>
+              Admin sign in
+            </button>
+          )}
         </div>
       </header>
 
@@ -253,12 +328,14 @@ function App() {
         <aside className="sidebar">
           <div className="sidebar__header">
             <p className="sidebar__title">Categories</p>
-            <button
-              className="btn btn--ghost btn--small"
-              onClick={() => setShowAddCategory(true)}
-            >
-              + Add
-            </button>
+            {isAdmin && (
+              <button
+                className="btn btn--ghost btn--small"
+                onClick={() => setShowAddCategory(true)}
+              >
+                + Add
+              </button>
+            )}
           </div>
           <ul className="sidebar__list">
             <li>
@@ -412,6 +489,20 @@ function App() {
         <AddCategoryModal
           onClose={() => setShowAddCategory(false)}
           onCreated={handleCategoryCreated}
+        />
+      )}
+      {showLogin && (
+        <LoginModal
+          onClose={() => setShowLogin(false)}
+          onSignedIn={handleSignedIn}
+        />
+      )}
+      {showManageCategories && (
+        <ManageCategoriesModal
+          categories={categories}
+          onClose={() => setShowManageCategories(false)}
+          onChanged={(next) => setCategories(next)}
+          onError={(msg) => showToast(msg, 'error')}
         />
       )}
 
