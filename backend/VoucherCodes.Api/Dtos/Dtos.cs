@@ -16,6 +16,7 @@ public record VoucherDto(
     int Upvotes,
     int Downvotes,
     int RedeemCount,
+    bool IsApproved,
     int SiteId,
     string SiteName,
     string SiteUrl,

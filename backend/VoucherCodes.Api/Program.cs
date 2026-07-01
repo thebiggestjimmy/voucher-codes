@@ -42,6 +42,7 @@ using (var scope = app.Services.CreateScope())
     // before any insert (EnsureFitnessTrackers) references it.
     DbSeeder.EnsureSchema(db);
     DbSeeder.EnsureFitnessTrackers(db);
+    DbSeeder.EnsurePersonalFinance(db);
 }
 
 if (app.Environment.IsDevelopment())

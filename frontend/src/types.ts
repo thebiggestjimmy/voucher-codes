@@ -25,6 +25,7 @@ export interface Voucher {
   upvotes: number;
   downvotes: number;
   redeemCount: number;
+  isApproved: boolean;
   siteId: number;
   siteName: string;
   siteUrl: string;
@@ -34,3 +35,5 @@ export interface Voucher {
 }
 
 export type SortKey = 'top' | 'new' | 'expiring' | 'popular';
+
+export type VoucherStatus = 'approved' | 'pending' | 'all';

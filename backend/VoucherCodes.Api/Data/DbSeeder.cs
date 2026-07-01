@@ -21,6 +21,12 @@ public static class DbSeeder
             db.Database.ExecuteSqlRaw(
                 "ALTER TABLE \"Vouchers\" ADD COLUMN \"RedeemCount\" INTEGER NOT NULL DEFAULT 0;");
         }
+        if (!ColumnExists(db, "Vouchers", "IsApproved"))
+        {
+            // Rows that already exist are historical / seeded, so back-fill them as approved.
+            db.Database.ExecuteSqlRaw(
+                "ALTER TABLE \"Vouchers\" ADD COLUMN \"IsApproved\" INTEGER NOT NULL DEFAULT 1;");
+        }
     }
 
     private static bool ColumnExists(AppDbContext db, string table, string column)
@@ -75,12 +81,12 @@ public static class DbSeeder
         db.SaveChanges();
 
         db.Vouchers.AddRange(
-            new Voucher { Code = "SUMMER20", Description = "20% off summer collection", SiteId = asos.Id, SubmittedBy = "alex", Upvotes = 12 },
-            new Voucher { Code = "FREESHIP", Description = "Free shipping on orders over £50", SiteId = asos.Id, SubmittedBy = "sam", Upvotes = 4 },
-            new Voucher { Code = "PRIME10", Description = "£10 off your next Prime order", SiteId = amazon.Id, SubmittedBy = "jo", Upvotes = 9, ExpiresOn = DateTime.UtcNow.AddDays(30) },
-            new Voucher { Code = "TWOFORONE", Description = "Buy one get one free on large pizzas", SiteId = domino.Id, SubmittedBy = "pat", Upvotes = 21 },
-            new Voucher { Code = "STAY15", Description = "15% off stays in Europe", SiteId = booking.Id, SubmittedBy = "ren", Upvotes = 7 },
-            new Voucher { Code = "HOME5", Description = "£5 off a £25 spend", SiteId = ikea.Id, SubmittedBy = "kai", Upvotes = 3 }
+            new Voucher { Code = "SUMMER20", Description = "20% off summer collection", SiteId = asos.Id, SubmittedBy = "alex", Upvotes = 12, IsApproved = true },
+            new Voucher { Code = "FREESHIP", Description = "Free shipping on orders over £50", SiteId = asos.Id, SubmittedBy = "sam", Upvotes = 4, IsApproved = true },
+            new Voucher { Code = "PRIME10", Description = "£10 off your next Prime order", SiteId = amazon.Id, SubmittedBy = "jo", Upvotes = 9, ExpiresOn = DateTime.UtcNow.AddDays(30), IsApproved = true },
+            new Voucher { Code = "TWOFORONE", Description = "Buy one get one free on large pizzas", SiteId = domino.Id, SubmittedBy = "pat", Upvotes = 21, IsApproved = true },
+            new Voucher { Code = "STAY15", Description = "15% off stays in Europe", SiteId = booking.Id, SubmittedBy = "ren", Upvotes = 7, IsApproved = true },
+            new Voucher { Code = "HOME5", Description = "£5 off a £25 spend", SiteId = ikea.Id, SubmittedBy = "kai", Upvotes = 3, IsApproved = true }
         );
         db.SaveChanges();
     }
@@ -107,10 +113,40 @@ public static class DbSeeder
         db.SaveChanges();
 
         db.Vouchers.AddRange(
-            new Voucher { Code = "WHOOPFREE", Description = "One month free WHOOP membership for new members", SiteId = whoop.Id, SubmittedBy = "ada", Upvotes = 18 },
-            new Voucher { Code = "JOIN30", Description = "30-day free trial plus a free band on a 12-month membership", SiteId = whoop.Id, SubmittedBy = "marco", Upvotes = 11, ExpiresOn = DateTime.UtcNow.AddDays(45) },
-            new Voucher { Code = "GARMIN10", Description = "10% off your first Garmin wearable", SiteId = garmin.Id, SubmittedBy = "lena", Upvotes = 6 },
-            new Voucher { Code = "OURA40", Description = "£40 off the Oura Ring 4", SiteId = oura.Id, SubmittedBy = "sam", Upvotes = 8 }
+            new Voucher { Code = "WHOOPFREE", Description = "One month free WHOOP membership for new members", SiteId = whoop.Id, SubmittedBy = "ada", Upvotes = 18, IsApproved = true },
+            new Voucher { Code = "JOIN30", Description = "30-day free trial plus a free band on a 12-month membership", SiteId = whoop.Id, SubmittedBy = "marco", Upvotes = 11, ExpiresOn = DateTime.UtcNow.AddDays(45), IsApproved = true },
+            new Voucher { Code = "GARMIN10", Description = "10% off your first Garmin wearable", SiteId = garmin.Id, SubmittedBy = "lena", Upvotes = 6, IsApproved = true },
+            new Voucher { Code = "OURA40", Description = "£40 off the Oura Ring 4", SiteId = oura.Id, SubmittedBy = "sam", Upvotes = 8, IsApproved = true }
+        );
+        db.SaveChanges();
+    }
+
+    /// <summary>
+    /// Idempotently adds the "Personal Finance" category (Tide + Monzo + Starling)
+    /// with sample codes. Same shape as EnsureFitnessTrackers — safe to run every
+    /// startup, no-ops once the category is present.
+    /// </summary>
+    public static void EnsurePersonalFinance(AppDbContext db)
+    {
+        db.Database.EnsureCreated();
+        if (db.Categories.Any(c => c.Name == "Personal Finance")) return;
+
+        var finance = new Category { Name = "Personal Finance", Color = "#14b8a6" };
+        db.Categories.Add(finance);
+        db.SaveChanges();
+
+        var tide = new Site { Name = "Tide", Url = "https://tide.co", CategoryId = finance.Id };
+        var monzo = new Site { Name = "Monzo", Url = "https://monzo.com", CategoryId = finance.Id };
+        var starling = new Site { Name = "Starling Bank", Url = "https://starlingbank.com", CategoryId = finance.Id };
+        db.Sites.AddRange(tide, monzo, starling);
+        db.SaveChanges();
+
+        db.Vouchers.AddRange(
+            new Voucher { Code = "TIDE100", Description = "£100 cashback when you open a Tide business account", SiteId = tide.Id, SubmittedBy = "team", Upvotes = 18, ExpiresOn = DateTime.UtcNow.AddDays(60), IsApproved = true },
+            new Voucher { Code = "TIDEFREE", Description = "Free company formation when you open a Tide account", SiteId = tide.Id, SubmittedBy = "team", Upvotes = 11, IsApproved = true },
+            new Voucher { Code = "TIDEREF50", Description = "£50 referral bonus on a new Tide account", SiteId = tide.Id, SubmittedBy = "rae", Upvotes = 6, ExpiresOn = DateTime.UtcNow.AddDays(45), IsApproved = true },
+            new Voucher { Code = "MONZO5", Description = "£5 sign-up bonus on a new Monzo current account", SiteId = monzo.Id, SubmittedBy = "team", Upvotes = 8, IsApproved = true },
+            new Voucher { Code = "STARLING10", Description = "£10 cashback on first card spend with Starling", SiteId = starling.Id, SubmittedBy = "team", Upvotes = 5, ExpiresOn = DateTime.UtcNow.AddDays(90), IsApproved = true }
         );
         db.SaveChanges();
     }

@@ -26,6 +26,9 @@ public class Voucher
     /// <summary>Anonymous count of how many times this code has been copied.</summary>
     public int RedeemCount { get; set; }
 
+    /// <summary>Whether the code has been reviewed by an admin. Anonymous submissions default to false.</summary>
+    public bool IsApproved { get; set; }
+
     public int SiteId { get; set; }
     public Site? Site { get; set; }
 }

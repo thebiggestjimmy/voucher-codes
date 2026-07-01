@@ -1,4 +1,4 @@
-import type { Category, Site, SortKey, Voucher } from './types';
+import type { Category, Site, SortKey, Voucher, VoucherStatus } from './types';
 
 const base = '/api';
 
@@ -48,6 +48,7 @@ export const api = {
     search?: string;
     includeExpired?: boolean;
     sort?: SortKey;
+    status?: VoucherStatus;
   }) => {
     const query = new URLSearchParams();
     if (params?.siteId) query.set('siteId', String(params.siteId));
@@ -55,9 +56,12 @@ export const api = {
     if (params?.search) query.set('search', params.search);
     if (params?.includeExpired) query.set('includeExpired', 'true');
     if (params?.sort) query.set('sort', params.sort);
+    if (params?.status) query.set('status', params.status);
     const qs = query.toString();
     return request<Voucher[]>(`${base}/vouchers${qs ? `?${qs}` : ''}`);
   },
+  pendingCount: () =>
+    request<{ count: number }>(`${base}/vouchers/pending-count`),
   createVoucher: (input: {
     code: string;
     description: string;
@@ -76,4 +80,8 @@ export const api = {
     }),
   redeemVoucher: (id: number) =>
     request<Voucher>(`${base}/vouchers/${id}/redeem`, { method: 'POST' }),
+  approveVoucher: (id: number) =>
+    request<Voucher>(`${base}/vouchers/${id}/approve`, { method: 'POST' }),
+  deleteVoucher: (id: number) =>
+    request<void>(`${base}/vouchers/${id}`, { method: 'DELETE' }),
 };
