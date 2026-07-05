@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using VoucherCodes.Api.Data;
 using VoucherCodes.Api.Dtos;
+using VoucherCodes.Api.Filters;
 using VoucherCodes.Api.Models;
+using VoucherCodes.Api.Services;
 
 namespace VoucherCodes.Api.Controllers;
 
@@ -11,8 +13,15 @@ namespace VoucherCodes.Api.Controllers;
 public class VouchersController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly AdminAuthService _auth;
 
-    public VouchersController(AppDbContext db) => _db = db;
+    public VouchersController(AppDbContext db, AdminAuthService auth)
+    {
+        _db = db;
+        _auth = auth;
+    }
+
+    private bool IsAdmin() => _auth.Validate(AdminAuthService.ExtractToken(HttpContext));
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<VoucherDto>>> Get(
@@ -20,12 +29,24 @@ public class VouchersController : ControllerBase
         [FromQuery] int? categoryId,
         [FromQuery] string? search,
         [FromQuery] bool includeExpired = false,
-        [FromQuery] string sort = "top")
+        [FromQuery] string sort = "top",
+        [FromQuery] string status = "approved")
     {
         var query = _db.Vouchers
             .Include(v => v.Site)!
                 .ThenInclude(s => s!.Category)
             .AsQueryable();
+
+        var statusLower = status.ToLowerInvariant();
+        if ((statusLower == "pending" || statusLower == "all") && !IsAdmin())
+            return Unauthorized(new { error = "Admin authentication required to view pending vouchers." });
+
+        query = statusLower switch
+        {
+            "pending" => query.Where(v => !v.IsApproved),
+            "all" => query,
+            _ => query.Where(v => v.IsApproved),
+        };
 
         if (siteId.HasValue)
             query = query.Where(v => v.SiteId == siteId.Value);
@@ -56,16 +77,16 @@ public class VouchersController : ControllerBase
             _ => query.OrderByDescending(v => v.Upvotes - v.Downvotes).ThenByDescending(v => v.SubmittedOn),
         };
 
-        var results = await query
-            .Take(200)
-            .Select(v => new VoucherDto(
-                v.Id, v.Code, v.Description, v.ExpiresOn, v.SubmittedOn,
-                v.SubmittedBy, v.Upvotes, v.Downvotes, v.RedeemCount,
-                v.SiteId, v.Site!.Name, v.Site!.Url,
-                v.Site!.CategoryId, v.Site!.Category!.Name, v.Site!.Category!.Color))
-            .ToListAsync();
+        var rows = await query.Take(200).ToListAsync();
+        return Ok(rows.Select(ToDto));
+    }
 
-        return Ok(results);
+    [HttpGet("pending-count")]
+    [AdminOnly]
+    public async Task<ActionResult<object>> PendingCount()
+    {
+        var count = await _db.Vouchers.CountAsync(v => !v.IsApproved);
+        return Ok(new { count });
     }
 
     [HttpPost]
@@ -93,17 +114,14 @@ public class VouchersController : ControllerBase
             SubmittedBy = string.IsNullOrWhiteSpace(request.SubmittedBy) ? "anonymous" : request.SubmittedBy.Trim(),
             SiteId = site.Id,
             SubmittedOn = DateTime.UtcNow,
+            IsApproved = IsAdmin(),
         };
 
         _db.Vouchers.Add(voucher);
         await _db.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(Get), new { id = voucher.Id },
-            new VoucherDto(
-                voucher.Id, voucher.Code, voucher.Description, voucher.ExpiresOn,
-                voucher.SubmittedOn, voucher.SubmittedBy, voucher.Upvotes, voucher.Downvotes,
-                voucher.RedeemCount, site.Id, site.Name, site.Url,
-                site.CategoryId, site.Category!.Name, site.Category!.Color));
+        voucher.Site = site;
+        return CreatedAtAction(nameof(Get), new { id = voucher.Id }, ToDto(voucher));
     }
 
     [HttpPost("{id}/vote")]
@@ -144,9 +162,34 @@ public class VouchersController : ControllerBase
         return Ok(ToDto(voucher));
     }
 
-    private static VoucherDto ToDto(Voucher voucher) => new(
-        voucher.Id, voucher.Code, voucher.Description, voucher.ExpiresOn,
-        voucher.SubmittedOn, voucher.SubmittedBy, voucher.Upvotes, voucher.Downvotes,
-        voucher.RedeemCount, voucher.SiteId, voucher.Site!.Name, voucher.Site!.Url,
-        voucher.Site!.CategoryId, voucher.Site!.Category!.Name, voucher.Site!.Category!.Color);
+    [HttpPost("{id}/approve")]
+    [AdminOnly]
+    public async Task<ActionResult<VoucherDto>> Approve(int id)
+    {
+        var voucher = await _db.Vouchers.Include(v => v.Site)!
+            .ThenInclude(s => s!.Category)
+            .FirstOrDefaultAsync(v => v.Id == id);
+        if (voucher is null) return NotFound();
+
+        voucher.IsApproved = true;
+        await _db.SaveChangesAsync();
+        return Ok(ToDto(voucher));
+    }
+
+    [HttpDelete("{id}")]
+    [AdminOnly]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var voucher = await _db.Vouchers.FindAsync(id);
+        if (voucher is null) return NotFound();
+        _db.Vouchers.Remove(voucher);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    private static VoucherDto ToDto(Voucher v) => new(
+        v.Id, v.Code, v.Description, v.ExpiresOn, v.SubmittedOn,
+        v.SubmittedBy, v.Upvotes, v.Downvotes, v.RedeemCount, v.IsApproved,
+        v.SiteId, v.Site!.Name, v.Site!.Slug, v.Site!.Url,
+        v.Site!.CategoryId, v.Site!.Category!.Name, v.Site!.Category!.Slug, v.Site!.Category!.Color);
 }

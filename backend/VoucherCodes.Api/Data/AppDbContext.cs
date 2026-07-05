@@ -26,6 +26,8 @@ public class AppDbContext : DbContext
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Category>().HasIndex(c => c.Name).IsUnique();
+        modelBuilder.Entity<Category>().HasIndex(c => c.Slug).IsUnique();
         modelBuilder.Entity<Site>().HasIndex(s => s.Name);
+        modelBuilder.Entity<Site>().HasIndex(s => s.Slug).IsUnique();
     }
 }

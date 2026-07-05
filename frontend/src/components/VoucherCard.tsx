@@ -1,10 +1,16 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { Voucher } from '../types';
 
 interface Props {
   voucher: Voucher;
   onVote: (direction: 'up' | 'down') => void;
   onRedeem: () => void;
+  mode?: 'public' | 'review';
+  isAdmin?: boolean;
+  onApprove?: () => void;
+  onReject?: () => void;
+  onDelete?: () => void;
 }
 
 function formatDate(iso: string | null): string | null {
@@ -19,12 +25,22 @@ function daysUntil(iso: string | null): number | null {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
-export function VoucherCard({ voucher, onVote, onRedeem }: Props) {
+export function VoucherCard({
+  voucher,
+  onVote,
+  onRedeem,
+  mode = 'public',
+  isAdmin = false,
+  onApprove,
+  onReject,
+  onDelete,
+}: Props) {
   const [copied, setCopied] = useState(false);
   const score = voucher.upvotes - voucher.downvotes;
   const days = daysUntil(voucher.expiresOn);
   const isExpired = days !== null && days < 0;
   const isExpiring = days !== null && days >= 0 && days <= 7;
+  const isReview = mode === 'review';
 
   const copy = async () => {
     try {
@@ -34,18 +50,21 @@ export function VoucherCard({ voucher, onVote, onRedeem }: Props) {
     } catch {
       // ignore clipboard failures
     }
-    // Count the copy regardless — it's the clearest signal of intent to use.
     onRedeem();
   };
 
   return (
-    <article className="voucher">
+    <article
+      id={`voucher-${voucher.id}`}
+      className={`voucher ${isReview ? 'voucher--pending' : ''}`}
+    >
       <div className="voucher__votes">
         <button
           type="button"
           className="voucher__vote-btn"
           aria-label="Upvote"
           onClick={() => onVote('up')}
+          disabled={isReview}
         >
           ▲
         </button>
@@ -55,6 +74,7 @@ export function VoucherCard({ voucher, onVote, onRedeem }: Props) {
           className="voucher__vote-btn"
           aria-label="Downvote"
           onClick={() => onVote('down')}
+          disabled={isReview}
         >
           ▼
         </button>
@@ -64,13 +84,16 @@ export function VoucherCard({ voucher, onVote, onRedeem }: Props) {
         <div className="voucher__top">
           <span className="voucher__code">{voucher.code}</span>
           <span className="voucher__site">
-            <a href={voucher.siteUrl} target="_blank" rel="noreferrer noopener">
-              {voucher.siteName}
-            </a>
+            <Link to={`/site/${voucher.siteSlug}`}>{voucher.siteName}</Link>
           </span>
-          <span className="tag" style={{ background: voucher.categoryColor }}>
+          <Link
+            to={`/category/${voucher.categorySlug}`}
+            className="tag"
+            style={{ background: voucher.categoryColor }}
+          >
             {voucher.categoryName}
-          </span>
+          </Link>
+          {isReview && <span className="tag tag--pending">Pending review</span>}
         </div>
 
         {voucher.description && (
@@ -94,24 +117,58 @@ export function VoucherCard({ voucher, onVote, onRedeem }: Props) {
                 : `Expires ${formatDate(voucher.expiresOn)}`}
             </span>
           )}
-          <span>{voucher.upvotes} up · {voucher.downvotes} down</span>
-          {voucher.redeemCount > 0 && (
-            <span className="voucher__used">
-              Used {voucher.redeemCount.toLocaleString()}{' '}
-              {voucher.redeemCount === 1 ? 'time' : 'times'}
-            </span>
+          {!isReview && (
+            <>
+              <span>{voucher.upvotes} up · {voucher.downvotes} down</span>
+              {voucher.redeemCount > 0 && (
+                <span className="voucher__used">
+                  Used {voucher.redeemCount.toLocaleString()}{' '}
+                  {voucher.redeemCount === 1 ? 'time' : 'times'}
+                </span>
+              )}
+            </>
           )}
         </div>
       </div>
 
       <div className="voucher__actions">
-        <button
-          type="button"
-          className={`copy-btn ${copied ? 'copy-btn--copied' : ''}`}
-          onClick={copy}
-        >
-          {copied ? 'Copied!' : 'Copy code'}
-        </button>
+        {isReview ? (
+          <>
+            <button
+              type="button"
+              className="btn btn--primary btn--small"
+              onClick={onApprove}
+            >
+              Approve
+            </button>
+            <button
+              type="button"
+              className="btn btn--danger btn--small"
+              onClick={onReject}
+            >
+              Reject
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              className={`copy-btn ${copied ? 'copy-btn--copied' : ''}`}
+              onClick={copy}
+            >
+              {copied ? 'Copied!' : 'Copy code'}
+            </button>
+            {isAdmin && onDelete && (
+              <button
+                type="button"
+                className="btn btn--danger btn--small"
+                onClick={onDelete}
+              >
+                Delete
+              </button>
+            )}
+          </>
+        )}
       </div>
     </article>
   );

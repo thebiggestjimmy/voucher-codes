@@ -10,8 +10,14 @@ public class Category
     [MaxLength(80)]
     public string Name { get; set; } = string.Empty;
 
+    [MaxLength(100)]
+    public string Slug { get; set; } = string.Empty;
+
     [MaxLength(20)]
     public string Color { get; set; } = "#64748b";
+
+    [MaxLength(1000)]
+    public string Description { get; set; } = string.Empty;
 
     public List<Site> Sites { get; set; } = new();
 }

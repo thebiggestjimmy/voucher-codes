@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using VoucherCodes.Api.Data;
+using VoucherCodes.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +9,8 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(connectionString));
+
+builder.Services.AddSingleton<AdminAuthService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -42,6 +45,15 @@ using (var scope = app.Services.CreateScope())
     // before any insert (EnsureFitnessTrackers) references it.
     DbSeeder.EnsureSchema(db);
     DbSeeder.EnsureFitnessTrackers(db);
+    DbSeeder.EnsurePersonalFinance(db);
+}
+
+var adminPasswordConfigured = Environment.GetEnvironmentVariable("ADMIN_PASSWORD")
+    ?? builder.Configuration["Admin:Password"];
+if (string.IsNullOrEmpty(adminPasswordConfigured) || adminPasswordConfigured == "changeme")
+{
+    app.Logger.LogWarning(
+        "Admin password not set (or still 'changeme'). Set ADMIN_PASSWORD env var or Admin:Password in appsettings.json.");
 }
 
 if (app.Environment.IsDevelopment())
