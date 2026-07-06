@@ -28,6 +28,9 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Default: "Data Source=/data/vouchers.db"
+      # Read from .env. The `:?` form makes compose fail fast at `up` time if
+      # ADMIN_PASSWORD isn't set — better than silently falling back to "changeme".
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD must be set in .env}
     volumes:
       - vouchers-data:/data
     networks:
