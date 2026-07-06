@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using VoucherCodes.Api.Filters;
 using VoucherCodes.Api.Services;
 
@@ -15,6 +16,7 @@ public class AdminController : ControllerBase
     public record LoginRequest(string Password);
 
     [HttpPost("login")]
+    [EnableRateLimiting("admin-login")]
     public IActionResult Login([FromBody] LoginRequest request)
     {
         var token = _auth.TryLogin(request?.Password ?? string.Empty);
