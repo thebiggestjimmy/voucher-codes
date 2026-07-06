@@ -91,3 +91,17 @@ public class UpdateCategoryRequest
     [MaxLength(1000)]
     public string Description { get; set; } = string.Empty;
 }
+
+public class UpdateVoucherRequest
+{
+    [Required, MaxLength(60)]
+    public string Code { get; set; } = string.Empty;
+
+    [MaxLength(500)]
+    public string Description { get; set; } = string.Empty;
+
+    public DateTime? ExpiresOn { get; set; }
+
+    [Required]
+    public int SiteId { get; set; }
+}

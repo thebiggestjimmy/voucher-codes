@@ -125,6 +125,7 @@ export function CategoryPage() {
           <VoucherList
             filter={{ categoryId: category.id }}
             isAdmin={isAdmin}
+            sites={sites}
             emptyTitle={`No ${category.name} ${region.term} yet`}
             emptyBody={`Nothing live for ${category.name} — check back soon or submit one yourself.`}
             onError={(msg) => showToast(msg, 'error')}

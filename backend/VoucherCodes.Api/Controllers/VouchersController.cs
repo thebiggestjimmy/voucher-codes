@@ -176,6 +176,49 @@ public class VouchersController : ControllerBase
         return Ok(ToDto(voucher));
     }
 
+    [HttpPut("{id}")]
+    [AdminOnly]
+    public async Task<ActionResult<VoucherDto>> Update(int id, [FromBody] UpdateVoucherRequest request)
+    {
+        var voucher = await _db.Vouchers.Include(v => v.Site)!
+            .ThenInclude(s => s!.Category)
+            .FirstOrDefaultAsync(v => v.Id == id);
+        if (voucher is null) return NotFound();
+
+        var code = request.Code.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(code))
+            return BadRequest(new { error = "Voucher code is required." });
+
+        // If the site is changing, load it (and its category) so the DTO is complete.
+        Site? newSite = null;
+        if (request.SiteId != voucher.SiteId)
+        {
+            newSite = await _db.Sites.Include(s => s.Category)
+                .FirstOrDefaultAsync(s => s.Id == request.SiteId);
+            if (newSite is null)
+                return BadRequest(new { error = "Site not found." });
+        }
+
+        var dup = await _db.Vouchers.AnyAsync(v =>
+            v.Id != id &&
+            v.SiteId == request.SiteId &&
+            v.Code.ToUpper() == code);
+        if (dup)
+            return Conflict(new { error = "Another voucher with that code already exists for that site." });
+
+        voucher.Code = code;
+        voucher.Description = request.Description?.Trim() ?? string.Empty;
+        voucher.ExpiresOn = request.ExpiresOn;
+        if (newSite is not null)
+        {
+            voucher.SiteId = newSite.Id;
+            voucher.Site = newSite;
+        }
+
+        await _db.SaveChangesAsync();
+        return Ok(ToDto(voucher));
+    }
+
     [HttpDelete("{id}")]
     [AdminOnly]
     public async Task<IActionResult> Delete(int id)

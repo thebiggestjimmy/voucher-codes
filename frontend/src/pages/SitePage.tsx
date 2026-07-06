@@ -10,7 +10,7 @@ import type { Site, Voucher } from '../types';
 
 export function SitePage() {
   const { slug } = useParams<{ slug: string }>();
-  const { isAdmin, region, categories, showToast } = useLayout();
+  const { isAdmin, region, categories, sites, showToast } = useLayout();
   const [site, setSite] = useState<Site | null>(null);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -181,6 +181,7 @@ export function SitePage() {
           <VoucherList
             filter={{ siteId: site.id }}
             isAdmin={isAdmin}
+            sites={sites}
             emptyTitle={`No live ${site.name} codes yet`}
             emptyBody={`Nothing live for ${site.name} right now. If you spot a working code, help other shoppers by submitting it.`}
             onError={(msg) => showToast(msg, 'error')}

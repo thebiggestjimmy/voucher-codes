@@ -11,6 +11,7 @@ interface Props {
   onApprove?: () => void;
   onReject?: () => void;
   onDelete?: () => void;
+  onEdit?: () => void;
 }
 
 function formatDate(iso: string | null): string | null {
@@ -34,6 +35,7 @@ export function VoucherCard({
   onApprove,
   onReject,
   onDelete,
+  onEdit,
 }: Props) {
   const [copied, setCopied] = useState(false);
   const score = voucher.upvotes - voucher.downvotes;
@@ -141,6 +143,15 @@ export function VoucherCard({
             >
               Approve
             </button>
+            {onEdit && (
+              <button
+                type="button"
+                className="btn btn--small"
+                onClick={onEdit}
+              >
+                Edit
+              </button>
+            )}
             <button
               type="button"
               className="btn btn--danger btn--small"
@@ -158,6 +169,15 @@ export function VoucherCard({
             >
               {copied ? 'Copied!' : 'Copy code'}
             </button>
+            {isAdmin && onEdit && (
+              <button
+                type="button"
+                className="btn btn--small"
+                onClick={onEdit}
+              >
+                Edit
+              </button>
+            )}
             {isAdmin && onDelete && (
               <button
                 type="button"

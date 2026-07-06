@@ -5,12 +5,14 @@ import { api, UnauthorizedError } from '../api';
 import { useLayout } from '../Layout';
 import { Sidebar } from '../components/Sidebar';
 import { VoucherCard } from '../components/VoucherCard';
+import { EditVoucherModal } from '../components/EditVoucherModal';
 import type { Voucher } from '../types';
 
 export function ReviewPage() {
-  const { isAdmin, categories, showToast, bumpPendingCount } = useLayout();
+  const { isAdmin, categories, sites, showToast, bumpPendingCount } = useLayout();
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<Voucher | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,12 +102,25 @@ export function ReviewPage() {
                   onRedeem={() => undefined}
                   onApprove={() => handleApprove(v)}
                   onReject={() => handleReject(v)}
+                  onEdit={() => setEditing(v)}
                 />
               ))}
             </div>
           )}
         </main>
       </div>
+
+      {editing && (
+        <EditVoucherModal
+          voucher={editing}
+          sites={sites}
+          onClose={() => setEditing(null)}
+          onSaved={(updated) => {
+            setEditing(null);
+            setVouchers((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
+          }}
+        />
+      )}
     </>
   );
 }

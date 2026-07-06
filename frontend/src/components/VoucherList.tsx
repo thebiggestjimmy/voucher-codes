@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, UnauthorizedError } from '../api';
-import type { SortKey, Voucher } from '../types';
+import type { Site, SortKey, Voucher } from '../types';
 import { VoucherCard } from './VoucherCard';
+import { EditVoucherModal } from './EditVoucherModal';
 
 interface Props {
   filter: { categoryId?: number; siteId?: number };
@@ -9,6 +10,7 @@ interface Props {
   emptyTitle?: string;
   emptyBody?: string;
   isAdmin: boolean;
+  sites?: Site[];
   searchInputRef?: React.RefObject<HTMLInputElement | null>;
   /** When provided, the toolbar's search box mirrors this value (kept in sync via onSearchChange). */
   controlledSearch?: string;
@@ -32,6 +34,7 @@ export function VoucherList({
   emptyTitle = 'No vouchers found',
   emptyBody = 'Try clearing your filters, or be the first to add one.',
   isAdmin,
+  sites = [],
   searchInputRef,
   controlledSearch,
   onSearchChange,
@@ -50,6 +53,7 @@ export function VoucherList({
   const [includeExpired, setIncludeExpired] = useState(false);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<Voucher | null>(null);
 
   const debouncedSearch = useDebounced(search, 250);
 
@@ -176,10 +180,32 @@ export function VoucherList({
               isAdmin={isAdmin}
               onVote={(d) => handleVote(v, d)}
               onRedeem={() => handleRedeem(v)}
+              onEdit={isAdmin ? () => setEditing(v) : undefined}
               onDelete={() => handleAdminDelete(v)}
             />
           ))}
         </div>
+      )}
+
+      {editing && (
+        <EditVoucherModal
+          voucher={editing}
+          sites={sites}
+          onClose={() => setEditing(null)}
+          onSaved={(updated) => {
+            setEditing(null);
+            setVouchers((prev) =>
+              // Filter out edits that moved the voucher out of the current view.
+              prev
+                .map((v) => (v.id === updated.id ? updated : v))
+                .filter((v) => {
+                  if (filter.siteId !== undefined) return v.siteId === filter.siteId;
+                  if (filter.categoryId !== undefined) return v.categoryId === filter.categoryId;
+                  return true;
+                }),
+            );
+          }}
+        />
       )}
     </>
   );

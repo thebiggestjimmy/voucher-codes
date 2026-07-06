@@ -114,6 +114,19 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(input),
     }),
+  updateVoucher: (
+    id: number,
+    input: {
+      code: string;
+      description: string;
+      siteId: number;
+      expiresOn: string | null;
+    },
+  ) =>
+    request<Voucher>(`${base}/vouchers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    }),
   voteVoucher: (id: number, direction: 'up' | 'down') =>
     request<Voucher>(`${base}/vouchers/${id}/vote`, {
       method: 'POST',

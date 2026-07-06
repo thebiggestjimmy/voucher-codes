@@ -13,6 +13,7 @@ export function HomePage() {
     isAdmin,
     region,
     categories,
+    sites,
     showToast,
     scrollToBrowse,
     browseRef,
@@ -86,6 +87,7 @@ export function HomePage() {
           <VoucherList
             filter={{}}
             isAdmin={isAdmin}
+            sites={sites}
             searchInputRef={searchRef}
             controlledSearch={search}
             onSearchChange={setSearch}
