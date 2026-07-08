@@ -2,7 +2,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace VoucherCodes.Api.Dtos;
 
-public record CategoryDto(int Id, string Name, string Slug, string Color, string Description, int SiteCount);
+public record CategoryDto(
+    int Id, string Name, string Slug, string Color, string Description,
+    int SiteCount,
+    // Live codes only: approved and not expired. This is what the sidebar badges show.
+    int VoucherCount);
 
 public record SiteDto(
     int Id, string Name, string Slug, string Url, string Description,

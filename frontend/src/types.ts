@@ -5,6 +5,8 @@ export interface Category {
   color: string;
   description: string;
   siteCount: number;
+  /** Live codes: approved and not expired. What the sidebar badges show. */
+  voucherCount: number;
 }
 
 export interface Site {

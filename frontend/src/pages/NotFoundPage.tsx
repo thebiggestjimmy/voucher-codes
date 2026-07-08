@@ -5,7 +5,6 @@ import { Sidebar } from '../components/Sidebar';
 
 export function NotFoundPage() {
   const { categories } = useLayout();
-  const totalCategoryCount = categories.reduce((sum, c) => sum + c.siteCount, 0);
 
   return (
     <>
@@ -14,7 +13,7 @@ export function NotFoundPage() {
         <meta name="robots" content="noindex" />
       </Helmet>
       <div className="app__body">
-        <Sidebar categories={categories} totalCategoryCount={totalCategoryCount} />
+        <Sidebar categories={categories} />
         <main className="main">
           <div className="empty">
             <p className="empty__title">Page not found</p>

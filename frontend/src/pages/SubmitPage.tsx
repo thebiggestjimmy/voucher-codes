@@ -74,7 +74,6 @@ export function SubmitPage() {
     }
   };
 
-  const totalCategoryCount = categories.reduce((sum, c) => sum + c.siteCount, 0);
   const siteUrl = typeof window !== 'undefined' ? window.location.origin : httpsUrl(region.domain);
 
   return (
@@ -89,7 +88,7 @@ export function SubmitPage() {
       </Helmet>
 
       <div className="app__body">
-        <Sidebar categories={categories} totalCategoryCount={totalCategoryCount} />
+        <Sidebar categories={categories} />
         <main className="main">
           <nav className="breadcrumbs" aria-label="Breadcrumb">
             <Link to="/">Home</Link>

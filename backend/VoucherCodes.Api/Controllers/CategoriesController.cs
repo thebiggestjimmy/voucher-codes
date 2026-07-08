@@ -15,26 +15,44 @@ public class CategoriesController : ControllerBase
 
     public CategoriesController(AppDbContext db) => _db = db;
 
-    private static CategoryDto ToDto(Category c) =>
-        new(c.Id, c.Name, c.Slug, c.Color, c.Description, c.Sites.Count);
+    /// <summary>Counts live codes: approved and not past their expiry date.</summary>
+    private Task<int> LiveVoucherCountAsync(int categoryId)
+    {
+        var today = DateTime.UtcNow.Date;
+        return _db.Vouchers.CountAsync(v =>
+            v.Site!.CategoryId == categoryId &&
+            v.IsApproved &&
+            (v.ExpiresOn == null || v.ExpiresOn >= today));
+    }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CategoryDto>>> Get()
     {
+        var today = DateTime.UtcNow.Date;
         var categories = await _db.Categories
-            .Include(c => c.Sites)
             .OrderBy(c => c.Name)
+            .Select(c => new CategoryDto(
+                c.Id, c.Name, c.Slug, c.Color, c.Description,
+                c.Sites.Count,
+                c.Sites.SelectMany(s => s.Vouchers)
+                    .Count(v => v.IsApproved && (v.ExpiresOn == null || v.ExpiresOn >= today))))
             .ToListAsync();
-        return Ok(categories.Select(ToDto));
+        return Ok(categories);
     }
 
     [HttpGet("by-slug/{slug}")]
     public async Task<ActionResult<CategoryDto>> GetBySlug(string slug)
     {
+        var today = DateTime.UtcNow.Date;
         var category = await _db.Categories
-            .Include(c => c.Sites)
-            .FirstOrDefaultAsync(c => c.Slug == slug);
-        return category is null ? NotFound() : Ok(ToDto(category));
+            .Where(c => c.Slug == slug)
+            .Select(c => new CategoryDto(
+                c.Id, c.Name, c.Slug, c.Color, c.Description,
+                c.Sites.Count,
+                c.Sites.SelectMany(s => s.Vouchers)
+                    .Count(v => v.IsApproved && (v.ExpiresOn == null || v.ExpiresOn >= today))))
+            .FirstOrDefaultAsync();
+        return category is null ? NotFound() : Ok(category);
     }
 
     [HttpPost]
@@ -60,7 +78,8 @@ public class CategoriesController : ControllerBase
         _db.Categories.Add(category);
         await _db.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(Get), new { id = category.Id }, ToDto(category));
+        return CreatedAtAction(nameof(Get), new { id = category.Id },
+            new CategoryDto(category.Id, category.Name, category.Slug, category.Color, category.Description, 0, 0));
     }
 
     [HttpPut("{id}")]
@@ -88,7 +107,9 @@ public class CategoriesController : ControllerBase
         category.Description = request.Description?.Trim() ?? string.Empty;
         await _db.SaveChangesAsync();
 
-        return Ok(ToDto(category));
+        return Ok(new CategoryDto(
+            category.Id, category.Name, category.Slug, category.Color, category.Description,
+            category.Sites.Count, await LiveVoucherCountAsync(category.Id)));
     }
 
     [HttpDelete("{id}")]

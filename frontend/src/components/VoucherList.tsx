@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, UnauthorizedError } from '../api';
+import { useLayout } from '../Layout';
 import type { Site, SortKey, Voucher } from '../types';
 import { VoucherCard } from './VoucherCard';
 import { EditVoucherModal } from './EditVoucherModal';
@@ -54,6 +55,9 @@ export function VoucherList({
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Voucher | null>(null);
+
+  // Sidebar badges count live codes, so admin mutations must refresh them.
+  const { refreshCategoriesAndSites } = useLayout();
 
   const debouncedSearch = useDebounced(search, 250);
 
@@ -120,10 +124,11 @@ export function VoucherList({
   };
 
   const handleAdminDelete = async (voucher: Voucher) => {
-    if (!confirm(`Delete voucher ${voucher.code}?`)) return;
+    if (!confirm(`Delete voucher ${voucher.code || voucher.description || 'this deal'}?`)) return;
     try {
       await api.deleteVoucher(voucher.id);
       setVouchers((prev) => prev.filter((v) => v.id !== voucher.id));
+      refreshCategoriesAndSites();
     } catch (err) {
       onErrorRef.current(err instanceof Error ? err.message : 'Delete failed');
     }
@@ -204,6 +209,8 @@ export function VoucherList({
                   return true;
                 }),
             );
+            // Site/expiry changes shift the per-category live-code counts.
+            refreshCategoriesAndSites();
           }}
         />
       )}

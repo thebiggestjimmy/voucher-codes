@@ -75,7 +75,7 @@ export function HomePage() {
       <HowItWorks region={region} />
 
       <div className="app__body" ref={browseRef} id="browse">
-        <Sidebar categories={categories} totalCategoryCount={totalCategoryCount} />
+        <Sidebar categories={categories} />
         <main className="main">
           <div className="main__head">
             <h2 className="main__title">Latest {region.term}</h2>

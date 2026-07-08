@@ -26,14 +26,13 @@ export function CategoryPage() {
       .finally(() => setLoading(false));
   }, [slug]);
 
-  const totalCategoryCount = categories.reduce((sum, c) => sum + c.siteCount, 0);
   const siteUrl = typeof window !== 'undefined' ? window.location.origin : httpsUrl(region.domain);
   const sitesInCategory: Site[] = sites.filter((s) => s.categoryId === category?.id);
 
   if (loading) {
     return (
       <div className="app__body">
-        <Sidebar categories={categories} totalCategoryCount={totalCategoryCount} />
+        <Sidebar categories={categories} />
         <main className="main">
           <div className="loading"><span className="spinner" /> Loading category…</div>
         </main>
@@ -44,7 +43,7 @@ export function CategoryPage() {
   if (error || !category) {
     return (
       <div className="app__body">
-        <Sidebar categories={categories} totalCategoryCount={totalCategoryCount} />
+        <Sidebar categories={categories} />
         <main className="main">
           <div className="empty">
             <p className="empty__title">Category not found</p>
@@ -95,7 +94,7 @@ export function CategoryPage() {
       </Helmet>
 
       <div className="app__body">
-        <Sidebar categories={categories} totalCategoryCount={totalCategoryCount} />
+        <Sidebar categories={categories} />
         <main className="main">
           <nav className="breadcrumbs" aria-label="Breadcrumb">
             <Link to="/">Home</Link>

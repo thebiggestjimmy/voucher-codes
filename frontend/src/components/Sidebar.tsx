@@ -3,10 +3,13 @@ import type { Category } from '../types';
 
 interface Props {
   categories: Category[];
-  totalCategoryCount: number;
 }
 
-export function Sidebar({ categories, totalCategoryCount }: Props) {
+export function Sidebar({ categories }: Props) {
+  // Badges count live codes (approved, unexpired), not stores — "3" next to a
+  // category means three codes you can actually use right now.
+  const totalLiveCodes = categories.reduce((sum, c) => sum + c.voucherCount, 0);
+
   return (
     <aside className="sidebar">
       <div className="sidebar__header">
@@ -25,7 +28,7 @@ export function Sidebar({ categories, totalCategoryCount }: Props) {
               <span className="sidebar__dot" style={{ background: '#94a3b8' }} />
               All categories
             </span>
-            <span className="sidebar__count">{totalCategoryCount}</span>
+            <span className="sidebar__count">{totalLiveCodes}</span>
           </NavLink>
         </li>
         {categories.map((c) => (
@@ -40,7 +43,7 @@ export function Sidebar({ categories, totalCategoryCount }: Props) {
                 <span className="sidebar__dot" style={{ background: c.color }} />
                 {c.name}
               </span>
-              <span className="sidebar__count">{c.siteCount}</span>
+              <span className="sidebar__count">{c.voucherCount}</span>
             </NavLink>
           </li>
         ))}

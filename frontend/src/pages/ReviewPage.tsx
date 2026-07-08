@@ -9,7 +9,7 @@ import { EditVoucherModal } from '../components/EditVoucherModal';
 import type { Voucher } from '../types';
 
 export function ReviewPage() {
-  const { isAdmin, categories, sites, showToast, bumpPendingCount } = useLayout();
+  const { isAdmin, categories, sites, showToast, bumpPendingCount, refreshCategoriesAndSites } = useLayout();
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Voucher | null>(null);
@@ -43,7 +43,8 @@ export function ReviewPage() {
       await api.approveVoucher(voucher.id);
       setVouchers((prev) => prev.filter((v) => v.id !== voucher.id));
       bumpPendingCount(-1);
-      showToast(`Approved ${voucher.code} for ${voucher.siteName}`);
+      refreshCategoriesAndSites();
+      showToast(`Approved ${voucher.code || 'deal'} for ${voucher.siteName}`);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Approval failed', 'error');
     }
@@ -55,13 +56,13 @@ export function ReviewPage() {
       await api.deleteVoucher(voucher.id);
       setVouchers((prev) => prev.filter((v) => v.id !== voucher.id));
       bumpPendingCount(-1);
-      showToast(`Rejected ${voucher.code}`);
+      refreshCategoriesAndSites();
+      showToast(`Rejected ${voucher.code || 'deal'}`);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Reject failed', 'error');
     }
   };
 
-  const totalCategoryCount = categories.reduce((sum, c) => sum + c.siteCount, 0);
 
   return (
     <>
@@ -71,7 +72,7 @@ export function ReviewPage() {
       </Helmet>
 
       <div className="app__body">
-        <Sidebar categories={categories} totalCategoryCount={totalCategoryCount} />
+        <Sidebar categories={categories} />
         <main className="main">
           <div className="main__head">
             <h2 className="main__title">Review queue</h2>
