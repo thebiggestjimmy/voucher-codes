@@ -52,6 +52,9 @@ body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Backstop: no element may widen the page into horizontal scroll.
+     `clip` (unlike `hidden`) doesn't turn body into a scroll container. */
+  overflow-x: clip;
 }
 
 a {

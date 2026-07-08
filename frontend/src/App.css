@@ -12,6 +12,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  row-gap: 8px;
   position: sticky;
   top: 0;
   z-index: 30;
@@ -23,6 +25,8 @@
   align-items: center;
   gap: 12px;
   text-decoration: none;
+  /* Never let the brand shrink into the actions row. */
+  flex-shrink: 0;
 }
 
 .app__brand:hover {
@@ -33,6 +37,10 @@
   display: flex;
   gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  /* Wrapping room: take leftover space instead of forcing the row wider. */
+  min-width: 0;
 }
 
 .app__nav-link {
@@ -95,7 +103,31 @@
     padding: 16px;
   }
   .app__header {
-    padding: 14px 16px;
+    padding: 10px 12px;
+  }
+}
+
+/* Phones: brand on its own line, actions wrap below it in compact form. */
+@media (max-width: 560px) {
+  .app__header {
+    justify-content: center;
+  }
+  .app__brand {
+    flex-basis: 100%;
+    justify-content: center;
+  }
+  .app__header-actions {
+    flex-basis: 100%;
+    justify-content: center;
+  }
+  .app__header-actions .btn {
+    padding: 7px 10px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .app__admin-chip {
+    font-size: 11px;
+    padding: 3px 8px;
   }
 }
 
