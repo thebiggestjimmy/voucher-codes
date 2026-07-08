@@ -102,6 +102,22 @@ public class UpdateCategoryRequest
     public string Description { get; set; } = string.Empty;
 }
 
+public class UpdateSiteRequest
+{
+    [Required, MaxLength(120)]
+    public string Name { get; set; } = string.Empty;
+
+    [Required, MaxLength(300)]
+    [Url]
+    public string Url { get; set; } = string.Empty;
+
+    [Required]
+    public int CategoryId { get; set; }
+
+    [MaxLength(2000)]
+    public string Description { get; set; } = string.Empty;
+}
+
 public class UpdateVoucherRequest
 {
     /// <summary>Optional when LinkUrl is provided (link-only deal).</summary>

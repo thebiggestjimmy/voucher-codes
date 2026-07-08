@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using VoucherCodes.Api.Data;
 using VoucherCodes.Api.Dtos;
+using VoucherCodes.Api.Filters;
 using VoucherCodes.Api.Models;
 
 namespace VoucherCodes.Api.Controllers;
@@ -82,13 +83,65 @@ public class SitesController : ControllerBase
         return CreatedAtAction(nameof(GetOne), new { id = site.Id }, ToDto(site));
     }
 
-    private async Task<string> UniqueSlugAsync(string name)
+    [HttpPut("{id}")]
+    [AdminOnly]
+    public async Task<ActionResult<SiteDto>> Update(int id, [FromBody] UpdateSiteRequest request)
+    {
+        var site = await _db.Sites.Include(s => s.Category).Include(s => s.Vouchers)
+            .FirstOrDefaultAsync(s => s.Id == id);
+        if (site is null) return NotFound();
+
+        var name = request.Name.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+            return BadRequest(new { error = "Name is required." });
+
+        var newCategory = site.Category;
+        if (request.CategoryId != site.CategoryId)
+        {
+            newCategory = await _db.Categories.FindAsync(request.CategoryId);
+            if (newCategory is null)
+                return BadRequest(new { error = "Category not found." });
+        }
+
+        var clash = await _db.Sites
+            .AnyAsync(s => s.Id != id && s.Name.ToLower() == name.ToLower());
+        if (clash)
+            return Conflict(new { error = "Another store already has that name." });
+
+        if (!string.Equals(site.Name, name, StringComparison.OrdinalIgnoreCase))
+        {
+            site.Slug = await UniqueSlugAsync(name, id);
+        }
+        site.Name = name;
+        site.Url = request.Url.Trim();
+        site.Description = request.Description?.Trim() ?? string.Empty;
+        site.CategoryId = newCategory!.Id;
+        site.Category = newCategory;
+
+        await _db.SaveChangesAsync();
+        return Ok(ToDto(site));
+    }
+
+    [HttpDelete("{id}")]
+    [AdminOnly]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var site = await _db.Sites.Include(s => s.Vouchers).FirstOrDefaultAsync(s => s.Id == id);
+        if (site is null) return NotFound();
+
+        // Vouchers cascade-delete with their site (configured in AppDbContext).
+        _db.Sites.Remove(site);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    private async Task<string> UniqueSlugAsync(string name, int? excludeId = null)
     {
         var baseSlug = Slug.From(name);
         if (string.IsNullOrEmpty(baseSlug)) baseSlug = "site";
         var candidate = baseSlug;
         var suffix = 2;
-        while (await _db.Sites.AnyAsync(s => s.Slug == candidate))
+        while (await _db.Sites.AnyAsync(s => s.Slug == candidate && s.Id != (excludeId ?? -1)))
         {
             candidate = $"{baseSlug}-{suffix++}";
         }

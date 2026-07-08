@@ -129,7 +129,9 @@ export function ManageCategoriesModal({ categories, onClose, onChanged, onError 
                           style={{ background: c.color }}
                         />
                         {c.name}
-                        <span className="sidebar__count">{c.siteCount} sites</span>
+                        <span className="sidebar__count">
+                          {c.siteCount} {c.siteCount === 1 ? 'store' : 'stores'}
+                        </span>
                       </span>
                       <div className="manage-list__actions">
                         <button
@@ -155,7 +157,8 @@ export function ManageCategoriesModal({ categories, onClose, onChanged, onError 
             })}
           </ul>
           <p className="hint">
-            Deletion is only allowed for categories with no sites.
+            A category can only be deleted once it has no stores. To remove or
+            move a store, open its page and use Delete store / Edit store.
           </p>
         </div>
       </div>

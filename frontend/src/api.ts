@@ -82,6 +82,16 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ description: '', ...input }),
     }),
+  updateSite: (
+    id: number,
+    input: { name: string; url: string; categoryId: number; description?: string },
+  ) =>
+    request<Site>(`${base}/sites/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ description: '', ...input }),
+    }),
+  deleteSite: (id: number) =>
+    request<void>(`${base}/sites/${id}`, { method: 'DELETE' }),
 
   listVouchers: (params?: {
     siteId?: number;

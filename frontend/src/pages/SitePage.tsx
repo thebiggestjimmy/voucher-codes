@@ -1,20 +1,40 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { api } from '../api';
 import { useLayout } from '../Layout';
 import { Sidebar } from '../components/Sidebar';
 import { VoucherList } from '../components/VoucherList';
+import { EditSiteModal } from '../components/EditSiteModal';
 import { httpsUrl, SITE } from '../config';
 import type { Site, Voucher } from '../types';
 
 export function SitePage() {
   const { slug } = useParams<{ slug: string }>();
-  const { isAdmin, region, categories, sites, showToast } = useLayout();
+  const navigate = useNavigate();
+  const { isAdmin, region, categories, sites, showToast, refreshCategoriesAndSites } = useLayout();
   const [site, setSite] = useState<Site | null>(null);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editingSite, setEditingSite] = useState(false);
+
+  const handleDeleteSite = async (target: Site) => {
+    const codeCount = target.voucherCount;
+    const warning =
+      codeCount > 0
+        ? `Delete ${target.name} and its ${codeCount} live code${codeCount === 1 ? '' : 's'}? Pending submissions for it are removed too. This cannot be undone.`
+        : `Delete ${target.name}? Any pending submissions for it are removed too. This cannot be undone.`;
+    if (!confirm(warning)) return;
+    try {
+      await api.deleteSite(target.id);
+      await refreshCategoriesAndSites();
+      showToast(`Deleted ${target.name}`);
+      navigate(`/category/${target.categorySlug}`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Delete failed', 'error');
+    }
+  };
 
   useEffect(() => {
     if (!slug) return;
@@ -165,7 +185,7 @@ export function SitePage() {
             </div>
             <h1>{site.name} {region.term} &amp; discount codes</h1>
             {site.description && <p>{site.description}</p>}
-            <p>
+            <p className="page-hero__actions">
               <a
                 className="btn btn--small"
                 href={site.url}
@@ -174,6 +194,24 @@ export function SitePage() {
               >
                 Visit {site.name} ↗
               </a>
+              {isAdmin && (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn--small"
+                    onClick={() => setEditingSite(true)}
+                  >
+                    Edit store
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--danger btn--small"
+                    onClick={() => handleDeleteSite(site)}
+                  >
+                    Delete store
+                  </button>
+                </>
+              )}
             </p>
           </section>
 
@@ -188,6 +226,22 @@ export function SitePage() {
           />
         </main>
       </div>
+
+      {editingSite && (
+        <EditSiteModal
+          site={site}
+          categories={categories}
+          onClose={() => setEditingSite(false)}
+          onSaved={(updated) => {
+            setEditingSite(false);
+            setSite(updated);
+            refreshCategoriesAndSites();
+            showToast(`Saved ${updated.name}`);
+            // A rename changes the slug — move to the new canonical URL.
+            if (updated.slug !== slug) navigate(`/site/${updated.slug}`, { replace: true });
+          }}
+        />
+      )}
     </>
   );
 }

@@ -120,10 +120,15 @@ public class CategoriesController : ControllerBase
         if (category is null) return NotFound();
 
         if (category.Sites.Count > 0)
+        {
+            var names = string.Join(", ", category.Sites.Select(s => s.Name).OrderBy(n => n).Take(3));
+            var more = category.Sites.Count > 3 ? $" and {category.Sites.Count - 3} more" : "";
             return Conflict(new
             {
-                error = $"Cannot delete: {category.Sites.Count} site(s) are in this category. Move or delete them first.",
+                error = $"\"{category.Name}\" still contains {(category.Sites.Count == 1 ? "the store" : "stores")} {names}{more}. " +
+                        "Open the store's page and use Delete store (or Edit store to move it to another category) first.",
             });
+        }
 
         _db.Categories.Remove(category);
         await _db.SaveChangesAsync();
