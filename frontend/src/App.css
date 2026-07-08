@@ -485,6 +485,39 @@
   border-color: var(--success);
 }
 
+/* Link-only deals: "No code needed" chip + "Get deal" action */
+.voucher__code--nocode {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--success);
+  background: #ecfdf5;
+  border: 1px dashed #a7f3d0;
+}
+
+.copy-btn--deal {
+  display: inline-block;
+  text-align: center;
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  text-decoration: none;
+}
+
+.copy-btn--deal:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: white;
+  text-decoration: none;
+}
+
+.voucher__deal-link {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 .empty {
   background: var(--surface);
   border: 1px dashed var(--border);

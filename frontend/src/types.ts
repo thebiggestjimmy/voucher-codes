@@ -22,7 +22,10 @@ export interface Site {
 
 export interface Voucher {
   id: number;
+  /** Empty string for link-only deals. */
   code: string;
+  /** Deal link with the discount embedded; empty when the offer is code-only. */
+  linkUrl: string;
   description: string;
   expiresOn: string | null;
   submittedOn: string;

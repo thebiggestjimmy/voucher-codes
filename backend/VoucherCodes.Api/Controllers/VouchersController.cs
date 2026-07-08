@@ -89,26 +89,52 @@ public class VouchersController : ControllerBase
         return Ok(new { count });
     }
 
+    /// <summary>
+    /// Normalizes and validates the code + deal-link pair shared by Create and
+    /// Update. A voucher needs a code, a link, or both; links must be http(s).
+    /// Returns an error message, or null when valid.
+    /// </summary>
+    private static string? NormalizeOffer(string? rawCode, string? rawLink, out string code, out string linkUrl)
+    {
+        code = (rawCode ?? string.Empty).Trim().ToUpperInvariant();
+        linkUrl = (rawLink ?? string.Empty).Trim();
+
+        if (code.Length == 0 && linkUrl.Length == 0)
+            return "Provide a voucher code, a deal link, or both.";
+
+        if (linkUrl.Length > 0 &&
+            (!Uri.TryCreate(linkUrl, UriKind.Absolute, out var uri) ||
+             (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)))
+            return "Deal link must be a full http(s) URL.";
+
+        return null;
+    }
+
     [HttpPost]
     public async Task<ActionResult<VoucherDto>> Create([FromBody] CreateVoucherRequest request)
     {
-        var code = request.Code.Trim().ToUpperInvariant();
-        if (string.IsNullOrWhiteSpace(code))
-            return BadRequest(new { error = "Voucher code is required." });
+        var offerError = NormalizeOffer(request.Code, request.LinkUrl, out var code, out var linkUrl);
+        if (offerError is not null)
+            return BadRequest(new { error = offerError });
 
         var site = await _db.Sites.Include(s => s.Category)
             .FirstOrDefaultAsync(s => s.Id == request.SiteId);
         if (site is null)
             return BadRequest(new { error = "Site not found." });
 
-        var dup = await _db.Vouchers
-            .AnyAsync(v => v.SiteId == site.Id && v.Code.ToUpper() == code);
-        if (dup)
-            return Conflict(new { error = "This code already exists for that site." });
+        // Codes must stay unique per site; link-only deals (empty code) can coexist.
+        if (code.Length > 0)
+        {
+            var dup = await _db.Vouchers
+                .AnyAsync(v => v.SiteId == site.Id && v.Code.ToUpper() == code);
+            if (dup)
+                return Conflict(new { error = "This code already exists for that site." });
+        }
 
         var voucher = new Voucher
         {
             Code = code,
+            LinkUrl = linkUrl,
             Description = request.Description?.Trim() ?? string.Empty,
             ExpiresOn = request.ExpiresOn,
             SubmittedBy = string.IsNullOrWhiteSpace(request.SubmittedBy) ? "anonymous" : request.SubmittedBy.Trim(),
@@ -185,9 +211,9 @@ public class VouchersController : ControllerBase
             .FirstOrDefaultAsync(v => v.Id == id);
         if (voucher is null) return NotFound();
 
-        var code = request.Code.Trim().ToUpperInvariant();
-        if (string.IsNullOrWhiteSpace(code))
-            return BadRequest(new { error = "Voucher code is required." });
+        var offerError = NormalizeOffer(request.Code, request.LinkUrl, out var code, out var linkUrl);
+        if (offerError is not null)
+            return BadRequest(new { error = offerError });
 
         // If the site is changing, load it (and its category) so the DTO is complete.
         Site? newSite = null;
@@ -199,14 +225,18 @@ public class VouchersController : ControllerBase
                 return BadRequest(new { error = "Site not found." });
         }
 
-        var dup = await _db.Vouchers.AnyAsync(v =>
-            v.Id != id &&
-            v.SiteId == request.SiteId &&
-            v.Code.ToUpper() == code);
-        if (dup)
-            return Conflict(new { error = "Another voucher with that code already exists for that site." });
+        if (code.Length > 0)
+        {
+            var dup = await _db.Vouchers.AnyAsync(v =>
+                v.Id != id &&
+                v.SiteId == request.SiteId &&
+                v.Code.ToUpper() == code);
+            if (dup)
+                return Conflict(new { error = "Another voucher with that code already exists for that site." });
+        }
 
         voucher.Code = code;
+        voucher.LinkUrl = linkUrl;
         voucher.Description = request.Description?.Trim() ?? string.Empty;
         voucher.ExpiresOn = request.ExpiresOn;
         if (newSite is not null)
@@ -231,7 +261,7 @@ public class VouchersController : ControllerBase
     }
 
     private static VoucherDto ToDto(Voucher v) => new(
-        v.Id, v.Code, v.Description, v.ExpiresOn, v.SubmittedOn,
+        v.Id, v.Code, v.LinkUrl, v.Description, v.ExpiresOn, v.SubmittedOn,
         v.SubmittedBy, v.Upvotes, v.Downvotes, v.RedeemCount, v.IsApproved,
         v.SiteId, v.Site!.Name, v.Site!.Slug, v.Site!.Url,
         v.Site!.CategoryId, v.Site!.Category!.Name, v.Site!.Category!.Slug, v.Site!.Category!.Color);

@@ -6,9 +6,13 @@ public class Voucher
 {
     public int Id { get; set; }
 
-    [Required]
+    /// <summary>Empty for link-only deals; a voucher must have a Code, a LinkUrl, or both.</summary>
     [MaxLength(60)]
     public string Code { get; set; } = string.Empty;
+
+    /// <summary>Optional deal link with the discount embedded — shown as "Get deal" instead of a code.</summary>
+    [MaxLength(500)]
+    public string LinkUrl { get; set; } = string.Empty;
 
     [MaxLength(500)]
     public string Description { get; set; } = string.Empty;

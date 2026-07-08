@@ -18,6 +18,7 @@ export function SubmitPage() {
   const [newSiteDescription, setNewSiteDescription] = useState('');
   const [categoryId, setCategoryId] = useState<number | ''>(categories[0]?.id ?? '');
   const [code, setCode] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
   const [description, setDescription] = useState('');
   const [submittedBy, setSubmittedBy] = useState('');
   const [expiresOn, setExpiresOn] = useState('');
@@ -32,8 +33,8 @@ export function SubmitPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!code.trim()) {
-      setError('Voucher code is required.');
+    if (!code.trim() && !linkUrl.trim()) {
+      setError('Provide a voucher code, a deal link, or both.');
       return;
     }
     setBusy(true);
@@ -56,6 +57,7 @@ export function SubmitPage() {
 
       const voucher: Voucher = await api.createVoucher({
         code: code.trim(),
+        linkUrl: linkUrl.trim(),
         description: description.trim(),
         siteId: targetSite.id,
         submittedBy: submittedBy.trim() || 'anonymous',
@@ -213,8 +215,25 @@ export function SubmitPage() {
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="SUMMER20"
-                required
               />
+              <p className="hint">
+                Leave blank if the discount is applied through a link instead of a code.
+              </p>
+            </div>
+
+            <div className="field">
+              <label htmlFor="linkUrl">Deal link (optional)</label>
+              <input
+                id="linkUrl"
+                type="url"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="https://store.com/offer?ref=…"
+              />
+              <p className="hint">
+                For "no code needed" promotions: a link that applies the
+                discount automatically. Shoppers will see a "Get deal" button.
+              </p>
             </div>
 
             <div className="field">

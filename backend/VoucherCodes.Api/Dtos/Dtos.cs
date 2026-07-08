@@ -12,6 +12,7 @@ public record SiteDto(
 public record VoucherDto(
     int Id,
     string Code,
+    string LinkUrl,
     string Description,
     DateTime? ExpiresOn,
     DateTime SubmittedOn,
@@ -59,8 +60,13 @@ public class CreateSiteRequest
 
 public class CreateVoucherRequest
 {
-    [Required, MaxLength(60)]
+    /// <summary>Optional when LinkUrl is provided (link-only deal).</summary>
+    [MaxLength(60)]
     public string Code { get; set; } = string.Empty;
+
+    /// <summary>Optional deal link with the discount embedded.</summary>
+    [MaxLength(500)]
+    public string LinkUrl { get; set; } = string.Empty;
 
     [MaxLength(500)]
     public string Description { get; set; } = string.Empty;
@@ -94,8 +100,13 @@ public class UpdateCategoryRequest
 
 public class UpdateVoucherRequest
 {
-    [Required, MaxLength(60)]
+    /// <summary>Optional when LinkUrl is provided (link-only deal).</summary>
+    [MaxLength(60)]
     public string Code { get; set; } = string.Empty;
+
+    /// <summary>Optional deal link with the discount embedded.</summary>
+    [MaxLength(500)]
+    public string LinkUrl { get; set; } = string.Empty;
 
     [MaxLength(500)]
     public string Description { get; set; } = string.Empty;

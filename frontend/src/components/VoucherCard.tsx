@@ -43,6 +43,7 @@ export function VoucherCard({
   const isExpired = days !== null && days < 0;
   const isExpiring = days !== null && days >= 0 && days <= 7;
   const isReview = mode === 'review';
+  const isLinkDeal = !voucher.code && !!voucher.linkUrl;
 
   const copy = async () => {
     try {
@@ -84,7 +85,11 @@ export function VoucherCard({
 
       <div className="voucher__main">
         <div className="voucher__top">
-          <span className="voucher__code">{voucher.code}</span>
+          {isLinkDeal ? (
+            <span className="voucher__code voucher__code--nocode">No code needed</span>
+          ) : (
+            <span className="voucher__code">{voucher.code}</span>
+          )}
           <span className="voucher__site">
             <Link to={`/site/${voucher.siteSlug}`}>{voucher.siteName}</Link>
           </span>
@@ -130,6 +135,16 @@ export function VoucherCard({
               )}
             </>
           )}
+          {isReview && voucher.linkUrl && (
+            <a
+              href={voucher.linkUrl}
+              target="_blank"
+              rel="noreferrer noopener nofollow"
+              className="voucher__deal-link"
+            >
+              Check deal link ↗
+            </a>
+          )}
         </div>
       </div>
 
@@ -162,13 +177,28 @@ export function VoucherCard({
           </>
         ) : (
           <>
-            <button
-              type="button"
-              className={`copy-btn ${copied ? 'copy-btn--copied' : ''}`}
-              onClick={copy}
-            >
-              {copied ? 'Copied!' : 'Copy code'}
-            </button>
+            {voucher.code && (
+              <button
+                type="button"
+                className={`copy-btn ${copied ? 'copy-btn--copied' : ''}`}
+                onClick={copy}
+              >
+                {copied ? 'Copied!' : 'Copy code'}
+              </button>
+            )}
+            {voucher.linkUrl && (
+              <a
+                className="copy-btn copy-btn--deal"
+                href={voucher.linkUrl}
+                target="_blank"
+                // sponsored: these are affiliate-style links; tells Google
+                // they're paid placements without hurting the page's SEO.
+                rel="noreferrer noopener nofollow sponsored"
+                onClick={onRedeem}
+              >
+                Get deal ↗
+              </a>
+            )}
             {isAdmin && onEdit && (
               <button
                 type="button"

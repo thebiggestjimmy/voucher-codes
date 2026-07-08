@@ -27,6 +27,11 @@ public static class DbSeeder
             db.Database.ExecuteSqlRaw(
                 "ALTER TABLE \"Vouchers\" ADD COLUMN \"IsApproved\" INTEGER NOT NULL DEFAULT 1;");
         }
+        if (!ColumnExists(db, "Vouchers", "LinkUrl"))
+        {
+            db.Database.ExecuteSqlRaw(
+                "ALTER TABLE \"Vouchers\" ADD COLUMN \"LinkUrl\" TEXT NOT NULL DEFAULT '';");
+        }
 
         // SEO columns: Category and Site slugs + editorial descriptions. Slugs
         // are back-filled from Name via a follow-up UPDATE below so existing

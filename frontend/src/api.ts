@@ -105,6 +105,7 @@ export const api = {
     request<{ count: number }>(`${base}/vouchers/pending-count`),
   createVoucher: (input: {
     code: string;
+    linkUrl?: string;
     description: string;
     siteId: number;
     submittedBy: string;
@@ -112,12 +113,13 @@ export const api = {
   }) =>
     request<Voucher>(`${base}/vouchers`, {
       method: 'POST',
-      body: JSON.stringify(input),
+      body: JSON.stringify({ linkUrl: '', ...input }),
     }),
   updateVoucher: (
     id: number,
     input: {
       code: string;
+      linkUrl?: string;
       description: string;
       siteId: number;
       expiresOn: string | null;
@@ -125,7 +127,7 @@ export const api = {
   ) =>
     request<Voucher>(`${base}/vouchers/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(input),
+      body: JSON.stringify({ linkUrl: '', ...input }),
     }),
   voteVoucher: (id: number, direction: 'up' | 'down') =>
     request<Voucher>(`${base}/vouchers/${id}/vote`, {

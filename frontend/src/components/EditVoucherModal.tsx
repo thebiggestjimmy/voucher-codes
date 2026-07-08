@@ -17,6 +17,7 @@ function toDateInputValue(iso: string | null): string {
 
 export function EditVoucherModal({ voucher, sites, onClose, onSaved }: Props) {
   const [code, setCode] = useState(voucher.code);
+  const [linkUrl, setLinkUrl] = useState(voucher.linkUrl);
   const [description, setDescription] = useState(voucher.description);
   const [siteId, setSiteId] = useState<number>(voucher.siteId);
   const [expiresOn, setExpiresOn] = useState(toDateInputValue(voucher.expiresOn));
@@ -26,14 +27,15 @@ export function EditVoucherModal({ voucher, sites, onClose, onSaved }: Props) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!code.trim()) {
-      setError('Voucher code is required.');
+    if (!code.trim() && !linkUrl.trim()) {
+      setError('Provide a voucher code, a deal link, or both.');
       return;
     }
     setBusy(true);
     try {
       const updated = await api.updateVoucher(voucher.id, {
         code: code.trim(),
+        linkUrl: linkUrl.trim(),
         description: description.trim(),
         siteId,
         expiresOn: expiresOn ? new Date(expiresOn).toISOString() : null,
@@ -80,9 +82,24 @@ export function EditVoucherModal({ voucher, sites, onClose, onSaved }: Props) {
               id="edit-code"
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              required
+              placeholder="Leave blank for a link-only deal"
               autoFocus
             />
+          </div>
+
+          <div className="field">
+            <label htmlFor="edit-link">Deal link (optional)</label>
+            <input
+              id="edit-link"
+              type="url"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              placeholder="https://store.com/offer?ref=…"
+            />
+            <p className="hint">
+              A link that applies the discount automatically — shoppers see a
+              "Get deal" button. Either a code or a link is required.
+            </p>
           </div>
 
           <div className="field">
