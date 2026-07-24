@@ -102,6 +102,12 @@
     grid-template-columns: 1fr;
     padding: 16px;
   }
+  /* Single-column layout: don't pin the sidebar, or the results column
+     (search toolbar included) scrolls up and floats over it. */
+  .sidebar {
+    position: static;
+    top: auto;
+  }
   .app__header {
     padding: 10px 12px;
   }
