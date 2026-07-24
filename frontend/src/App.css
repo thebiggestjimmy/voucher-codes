@@ -102,12 +102,6 @@
     grid-template-columns: 1fr;
     padding: 16px;
   }
-  /* Single-column layout: don't pin the sidebar, or the results column
-     (search toolbar included) scrolls up and floats over it. */
-  .sidebar {
-    position: static;
-    top: auto;
-  }
   .app__header {
     padding: 10px 12px;
   }
@@ -146,6 +140,16 @@
   position: sticky;
   top: 88px;
   box-shadow: var(--shadow-sm);
+}
+
+/* Single-column mobile layout: unpin the sidebar, otherwise it stays stuck
+   while the results column (search toolbar included) scrolls up and floats
+   over it. Declared AFTER the base rule above so source order wins. */
+@media (max-width: 880px) {
+  .sidebar {
+    position: static;
+    top: auto;
+  }
 }
 
 .sidebar__header {
